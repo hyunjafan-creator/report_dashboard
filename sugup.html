@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수급 대시보드 2026-07-14</title>
+<style>
+  :root { --bg:#0f1420; --card:#171e2e; --line:#232c42; --tx:#dbe4f5; --dim:#8492ad;
+          --up:#f4516c; --dn:#3d8bfd; --fl:#8492ad; --acc:#4f8ef7; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--tx); font-family:'Malgun Gothic','Segoe UI',sans-serif; padding:22px; }
+  h1 { font-size:21px; margin-bottom:4px; }
+  .meta { color:var(--dim); font-size:12px; margin-bottom:18px; }
+  .grid { display:grid; gap:14px; margin-bottom:14px; }
+  .g4 { grid-template-columns:repeat(4,1fr); }
+  .g3 { grid-template-columns:repeat(3,1fr); }
+  .g2 { grid-template-columns:repeat(2,1fr); }
+  @media (max-width:1100px){ .g4{grid-template-columns:repeat(2,1fr);} .g3{grid-template-columns:1fr;} .g2{grid-template-columns:1fr;} }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .ttl { font-size:13px; color:var(--dim); font-weight:bold; margin-bottom:10px; }
+  .tag { background:#233150; color:#7fa8ef; font-size:10px; padding:2px 7px; border-radius:8px; margin-left:6px; vertical-align:1px; }
+  .tag.lock { background:#3a2a35; color:#d99; }
+  .big { font-size:28px; font-weight:bold; }
+  .sub { font-size:14px; margin-top:2px; }
+  .mini { font-size:11px; color:var(--dim); margin-top:8px; line-height:1.6; }
+  .mini.dim { opacity:.8; }
+  .up { color:var(--up); } .dn { color:var(--dn); } .fl { color:var(--fl); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { color:var(--dim); font-weight:normal; font-size:11px; text-align:right; padding:4px 6px; border-bottom:1px solid var(--line); }
+  th:first-child { text-align:left; }
+  td { padding:6px; text-align:right; border-bottom:1px solid var(--line); }
+  td:first-child { text-align:left; }
+  tr:last-child td { border-bottom:none; }
+  td.lbl { color:var(--tx); }
+  .note { color:var(--dim); font-size:10px; margin-left:5px; }
+  .rank td:first-child { max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  svg { width:100%; height:auto; display:block; }
+  .axl { font-size:10px; fill:var(--dim); font-family:'Malgun Gothic',sans-serif; }
+  .grid line, line.grid { stroke:var(--line); stroke-width:1; }
+  .chstat { font-size:12px; color:var(--dim); margin-bottom:8px; }
+  .chstat b { color:var(--tx); font-size:15px; }
+  .lockbody { font-size:12px; color:var(--dim); line-height:1.8; }
+  .sec { font-size:14px; font-weight:bold; margin:22px 0 10px; color:#aebfdd; }
+  .src { color:var(--dim); font-size:11px; line-height:1.8; margin-top:20px; border-top:1px solid var(--line); padding-top:12px; }
+</style></head><body>
+<h1>국내 증시 수급 대시보드</h1>
+<div class="meta">갱신: 2026-07-14 13:18 KST · 지수 장중 기준 · 투자자별 순매수 기준일 26.07.14 · 예탁금/신용 최신일 26.07.10</div>
+
+<div class="grid g4">
+  
+    <div class="card idx">
+      <div class="ttl">코스피 <span class="tag">장중</span></div>
+      <div class="big dn">6,612.68</div>
+      <div class="sub dn">-194.25 (-2.85%)</div>
+      <div class="mini">고가 6,979.92 · 저가 6,448.86 · 거래대금 31.1조원</div>
+      <div class="mini dim">전영업일 확정(KRX 20260713): 6,806.93 (-8.95%)</div>
+    </div>
+  
+    <div class="card idx">
+      <div class="ttl">코스닥 <span class="tag">장중</span></div>
+      <div class="big dn">756.88</div>
+      <div class="sub dn">-42.48 (-5.31%)</div>
+      <div class="mini">고가 802.53 · 저가 749.76 · 거래대금 4.8조원</div>
+      <div class="mini dim">전영업일 확정(KRX 20260713): 799.36 (-4.55%)</div>
+    </div>
+  <div class="card">
+    <div class="ttl">투자자예탁금 <span class="tag">26.07.10</span></div>
+    <div class="big">105.6<span style="font-size:15px"> 조원</span></div>
+    <div class="sub dn">-1.55 조원 (전일비)</div>
+    <div class="mini">90영업일 최고 139.7조 · 최저 105.6조</div>
+  </div>
+  <div class="card">
+    <div class="ttl">신용거래융자 잔고 <span class="tag">26.07.10</span></div>
+    <div class="big">35.0<span style="font-size:15px"> 조원</span></div>
+    <div class="sub dn">-1.03 조원 (전일비)</div>
+    <div class="mini">90영업일 최고 38.0조 · 최저 31.2조</div>
+  </div>
+</div>
+
+<div class="sec">당일 투자자별 순매수 (억원) — 기준일 26.07.14</div>
+<div class="grid g2">
+  <div class="card">
+    <div class="ttl">주요 주체</div>
+    <table>
+      <tr><th>주체</th><th>코스피</th><th>코스닥</th></tr>
+      <tr><td class="lbl">개인</td>
+      <td class="dn">-30,065</td>
+      <td class="up">+699</td></tr>
+      <tr><td class="lbl">외국인</td>
+      <td class="up">+1,627</td>
+      <td class="dn">-1,830</td></tr>
+      <tr><td class="lbl">연기금등</td>
+      <td class="up">+1,122</td>
+      <td class="dn">-53</td></tr>
+      <tr><td class="lbl">투신(사모 포함)<span class="note">네이버 분류상 사모+투신 합산</span></td>
+      <td class="up">+8,455</td>
+      <td class="up">+918</td></tr>
+      <tr><td class="lbl">금융투자</td>
+      <td class="up">+18,680</td>
+      <td class="up">+242</td></tr>
+      <tr><td class="lbl">기관계</td>
+      <td class="up">+28,598</td>
+      <td class="up">+1,031</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <div class="ttl">기타 주체 (참고)</div>
+    <table>
+      <tr><th>주체</th><th>코스피</th><th>코스닥</th></tr>
+      <tr><td class="lbl">보험</td>
+      <td class="up">+800</td>
+      <td class="dn">-27</td></tr>
+      <tr><td class="lbl">은행</td>
+      <td class="dn">-342</td>
+      <td class="dn">-32</td></tr>
+      <tr><td class="lbl">기타금융</td>
+      <td class="dn">-117</td>
+      <td class="dn">-17</td></tr>
+      <tr><td class="lbl">기타법인</td>
+      <td class="dn">-159</td>
+      <td class="up">+101</td></tr>
+    </table>
+    <div class="mini">사모펀드 단독 수치는 KRX 정보데이터시스템 로그인 전용으로 전환되어 현재 무료 소스가 없습니다. 네이버(KOSCOM) 분류는 투신(사모) 합산 기준.</div>
+  </div>
+</div>
+
+<div class="sec">시장 유동성 — 최근 90영업일</div>
+<div class="grid g3">
+  <div class="card">
+    <div class="ttl">투자자예탁금 추이</div>
+    <div class="chstat"><b>105.6조원</b> (-15,521억)</div>
+    <svg viewBox="0 0 560 190" xmlns="http://www.w3.org/2000/svg">
+    <line x1="46" y1="166.0" x2="546" y2="166.0" class="grid"/><line x1="46" y1="90.0" x2="546" y2="90.0" class="grid"/><line x1="46" y1="14.0" x2="546" y2="14.0" class="grid"/>
+    <polygon points="46,166 46.0,58.0 51.6,48.0 57.2,53.2 62.9,57.4 68.5,68.7 74.1,76.9 79.7,106.1 85.3,101.1 90.9,103.1 96.6,111.5 102.2,125.0 107.8,136.1 113.4,121.1 119.0,98.6 124.7,93.3 130.3,102.8 135.9,151.4 141.5,139.3 147.1,133.7 152.7,141.5 158.4,145.0 164.0,138.8 169.6,152.6 175.2,150.7 180.8,157.6 186.4,151.1 192.1,147.0 197.7,133.8 203.3,122.4 208.9,119.1 214.5,112.1 220.2,114.4 225.8,105.9 231.4,99.1 237.0,93.6 242.6,96.0 248.2,90.4 253.9,74.9 259.5,76.4 265.1,75.2 270.7,68.7 276.3,58.4 282.0,80.5 287.6,80.2 293.2,53.9 298.8,26.1 304.4,33.6 310.0,38.9 315.7,24.1 321.3,25.5 326.9,41.6 332.5,44.5 338.1,43.9 343.8,70.7 349.4,76.6 355.0,91.1 360.6,96.2 366.2,81.4 371.8,63.5 377.5,52.1 383.1,50.1 388.7,45.6 394.3,26.8 399.9,14.0 405.6,38.3 411.2,28.7 416.8,56.7 422.4,67.9 428.0,68.9 433.6,97.0 439.3,99.1 444.9,81.5 450.5,81.1 456.1,64.3 461.7,60.1 467.3,47.5 473.0,26.8 478.6,28.0 484.2,70.6 489.8,72.3 495.4,46.2 501.1,94.5 506.7,101.4 512.3,102.1 517.9,109.5 523.5,136.5 529.1,135.9 534.8,142.4 540.4,159.1 546.0,166.0 546.0,166" fill="#4f8ef7" opacity="0.10"/>
+    <polyline points="46.0,58.0 51.6,48.0 57.2,53.2 62.9,57.4 68.5,68.7 74.1,76.9 79.7,106.1 85.3,101.1 90.9,103.1 96.6,111.5 102.2,125.0 107.8,136.1 113.4,121.1 119.0,98.6 124.7,93.3 130.3,102.8 135.9,151.4 141.5,139.3 147.1,133.7 152.7,141.5 158.4,145.0 164.0,138.8 169.6,152.6 175.2,150.7 180.8,157.6 186.4,151.1 192.1,147.0 197.7,133.8 203.3,122.4 208.9,119.1 214.5,112.1 220.2,114.4 225.8,105.9 231.4,99.1 237.0,93.6 242.6,96.0 248.2,90.4 253.9,74.9 259.5,76.4 265.1,75.2 270.7,68.7 276.3,58.4 282.0,80.5 287.6,80.2 293.2,53.9 298.8,26.1 304.4,33.6 310.0,38.9 315.7,24.1 321.3,25.5 326.9,41.6 332.5,44.5 338.1,43.9 343.8,70.7 349.4,76.6 355.0,91.1 360.6,96.2 366.2,81.4 371.8,63.5 377.5,52.1 383.1,50.1 388.7,45.6 394.3,26.8 399.9,14.0 405.6,38.3 411.2,28.7 416.8,56.7 422.4,67.9 428.0,68.9 433.6,97.0 439.3,99.1 444.9,81.5 450.5,81.1 456.1,64.3 461.7,60.1 467.3,47.5 473.0,26.8 478.6,28.0 484.2,70.6 489.8,72.3 495.4,46.2 501.1,94.5 506.7,101.4 512.3,102.1 517.9,109.5 523.5,136.5 529.1,135.9 534.8,142.4 540.4,159.1 546.0,166.0" fill="none" stroke="#4f8ef7" stroke-width="2"/>
+    <circle cx="546.0" cy="166.0" r="3.5" fill="#4f8ef7"/>
+    <text x="46.0" y="184" class="axl" text-anchor="start">26.03.03</text><text x="298.8" y="184" class="axl" text-anchor="middle">26.05.07</text><text x="546.0" y="184" class="axl" text-anchor="end">26.07.10</text><text x="40" y="169.5" class="axl" text-anchor="end">105.6</text><text x="40" y="93.5" class="axl" text-anchor="end">122.6</text><text x="40" y="17.5" class="axl" text-anchor="end">139.7</text>
+    <text x="46" y="12" class="axl">조원</text>
+  </svg>
+  </div>
+  <div class="card">
+    <div class="ttl">신용거래융자 잔고 추이</div>
+    <div class="chstat"><b>35.0조원</b> (-10,326억)</div>
+    <svg viewBox="0 0 560 190" xmlns="http://www.w3.org/2000/svg">
+    <line x1="46" y1="166.0" x2="546" y2="166.0" class="grid"/><line x1="46" y1="90.0" x2="546" y2="90.0" class="grid"/><line x1="46" y1="14.0" x2="546" y2="14.0" class="grid"/>
+    <polygon points="46,166 46.0,141.6 51.6,133.2 57.2,122.4 62.9,142.0 68.5,166.0 74.1,163.8 79.7,164.7 85.3,156.1 90.9,144.0 96.6,132.0 102.2,129.5 107.8,125.8 113.4,129.7 119.0,130.9 124.7,128.7 130.3,127.0 135.9,135.6 141.5,141.6 147.1,140.8 152.7,144.9 158.4,137.7 164.0,136.4 169.6,141.9 175.2,148.1 180.8,139.4 186.4,143.2 192.1,141.5 197.7,141.8 203.3,137.7 208.9,130.7 214.5,129.3 220.2,127.6 225.8,116.0 231.4,112.5 237.0,107.4 242.6,97.6 248.2,95.1 253.9,89.2 259.5,80.7 265.1,79.4 270.7,76.2 276.3,68.1 282.0,76.1 287.6,73.4 293.2,82.2 298.8,80.8 304.4,71.7 310.0,71.0 315.7,65.5 321.3,70.2 326.9,61.3 332.5,59.3 338.1,63.2 343.8,75.0 349.4,66.8 355.0,61.4 360.6,63.7 366.2,66.0 371.8,56.6 377.5,48.8 383.1,27.3 388.7,34.6 394.3,34.3 399.9,34.1 405.6,31.6 411.2,32.8 416.8,29.3 422.4,54.8 428.0,57.4 433.6,52.3 439.3,48.2 444.9,41.2 450.5,32.3 456.1,28.3 461.7,17.3 467.3,16.2 473.0,25.8 478.6,14.0 484.2,26.6 489.8,32.8 495.4,32.0 501.1,42.6 506.7,42.4 512.3,34.3 517.9,32.7 523.5,35.4 529.1,48.5 534.8,45.4 540.4,57.6 546.0,80.6 546.0,166" fill="#e2a03f" opacity="0.10"/>
+    <polyline points="46.0,141.6 51.6,133.2 57.2,122.4 62.9,142.0 68.5,166.0 74.1,163.8 79.7,164.7 85.3,156.1 90.9,144.0 96.6,132.0 102.2,129.5 107.8,125.8 113.4,129.7 119.0,130.9 124.7,128.7 130.3,127.0 135.9,135.6 141.5,141.6 147.1,140.8 152.7,144.9 158.4,137.7 164.0,136.4 169.6,141.9 175.2,148.1 180.8,139.4 186.4,143.2 192.1,141.5 197.7,141.8 203.3,137.7 208.9,130.7 214.5,129.3 220.2,127.6 225.8,116.0 231.4,112.5 237.0,107.4 242.6,97.6 248.2,95.1 253.9,89.2 259.5,80.7 265.1,79.4 270.7,76.2 276.3,68.1 282.0,76.1 287.6,73.4 293.2,82.2 298.8,80.8 304.4,71.7 310.0,71.0 315.7,65.5 321.3,70.2 326.9,61.3 332.5,59.3 338.1,63.2 343.8,75.0 349.4,66.8 355.0,61.4 360.6,63.7 366.2,66.0 371.8,56.6 377.5,48.8 383.1,27.3 388.7,34.6 394.3,34.3 399.9,34.1 405.6,31.6 411.2,32.8 416.8,29.3 422.4,54.8 428.0,57.4 433.6,52.3 439.3,48.2 444.9,41.2 450.5,32.3 456.1,28.3 461.7,17.3 467.3,16.2 473.0,25.8 478.6,14.0 484.2,26.6 489.8,32.8 495.4,32.0 501.1,42.6 506.7,42.4 512.3,34.3 517.9,32.7 523.5,35.4 529.1,48.5 534.8,45.4 540.4,57.6 546.0,80.6" fill="none" stroke="#e2a03f" stroke-width="2"/>
+    <circle cx="546.0" cy="80.6" r="3.5" fill="#e2a03f"/>
+    <text x="46.0" y="184" class="axl" text-anchor="start">26.03.03</text><text x="298.8" y="184" class="axl" text-anchor="middle">26.05.07</text><text x="546.0" y="184" class="axl" text-anchor="end">26.07.10</text><text x="40" y="169.5" class="axl" text-anchor="end">31.2</text><text x="40" y="93.5" class="axl" text-anchor="end">34.6</text><text x="40" y="17.5" class="axl" text-anchor="end">38.0</text>
+    <text x="46" y="12" class="axl">조원</text>
+  </svg>
+  </div>
+  
+    <div class="card locked">
+      <div class="ttl">전일 반대매매 / 예탁금 대비 비율 <span class="tag lock">잠금</span></div>
+      <div class="lockbody">
+    금융투자협회(FreeSIS) 반대매매 통계는 사이트 리뉴얼로 무인증 API가 차단되어 현재 자동 수집이 불가합니다.<br>
+    · 수동 확인: <a href="https://freesis.kofia.or.kr/stat/FreeSIS.do?parentDivId=MSIS10000000000000&serviceId=STATSCU0100000060" style="color:#7fa8ef">FreeSIS &gt; 주식 &gt; 증시자금추이</a><br>
+    · 연동 재개 조건: FreeSIS 신규 API 경로 확보 시 이 카드에 자동 표시되도록 코드가 준비되어 있습니다.</div>
+    </div>
+</div>
+
+<div class="sec">주체별 순매매 상위 top5 — 기준일 26.07.13 (코스피+코스닥 통합, 금액 기준)</div>
+<div class="grid g2">
+  <div class="card"><div class="ttl">외국인 순매수 top5</div><table class="rank">
+    <tr><th>종목</th><th>금액(억원)</th><th>수량(천주)</th></tr>
+    <tr><td>LG이노텍</td><td class="up">+1,640</td><td>245</td></tr><tr><td>SK스퀘어</td><td class="up">+1,090</td><td>91</td></tr><tr><td>KODEX 200선물인버스2X</td><td class="up">+399</td><td>422,392</td></tr><tr><td>현대차</td><td class="up">+395</td><td>85</td></tr><tr><td>삼성생명</td><td class="up">+332</td><td>103</td></tr>
+  </table></div>
+  <div class="card"><div class="ttl">외국인 순매도 top5</div><table class="rank">
+    <tr><th>종목</th><th>금액(억원)</th><th>수량(천주)</th></tr>
+    <tr><td>SK하이닉스</td><td class="dn">-13,980</td><td>705</td></tr><tr><td>삼성전자</td><td class="dn">-1,875</td><td>717</td></tr><tr><td>삼성전기</td><td class="dn">-1,391</td><td>98</td></tr><tr><td>KB금융</td><td class="dn">-722</td><td>378</td></tr><tr><td>피에스케이</td><td class="dn">-638</td><td>326</td></tr>
+  </table></div>
+  <div class="card"><div class="ttl">기관 순매수 top5</div><table class="rank">
+    <tr><th>종목</th><th>금액(억원)</th><th>수량(천주)</th></tr>
+    <tr><td>KODEX 200선물인버스2X</td><td class="up">+983</td><td>1,021,850</td></tr><tr><td>피에스케이</td><td class="up">+817</td><td>419</td></tr><tr><td>대덕전자</td><td class="up">+599</td><td>484</td></tr><tr><td>KB금융</td><td class="up">+595</td><td>312</td></tr><tr><td>S-Oil</td><td class="up">+561</td><td>395</td></tr>
+  </table></div>
+  <div class="card"><div class="ttl">기관 순매도 top5</div><table class="rank">
+    <tr><th>종목</th><th>금액(억원)</th><th>수량(천주)</th></tr>
+    <tr><td>SK하이닉스</td><td class="dn">-14,833</td><td>782</td></tr><tr><td>삼성전자</td><td class="dn">-8,528</td><td>3,246</td></tr><tr><td>KODEX 레버리지</td><td class="dn">-4,089</td><td>3,132</td></tr><tr><td>SK스퀘어</td><td class="dn">-1,747</td><td>143</td></tr><tr><td>삼성전기</td><td class="dn">-1,603</td><td>116</td></tr>
+  </table></div>
+</div>
+<div class="grid g2">
+  
+    <div class="card locked">
+      <div class="ttl">사모펀드 순매수/순매도 top5 <span class="tag lock">잠금</span></div>
+      <div class="lockbody">
+    KRX 정보데이터시스템(data.krx.co.kr)이 로그인제(KRX Data Marketplace)로 전환되어 주체별 상세 상위종목 무료 조회가 막혔습니다.<br>
+    해제 방법 (둘 중 하나):<br>
+    · KRX Data Marketplace 계정 생성 후 알려주시면 로그인 연동<br>
+    · 키움 OpenAPI 포털(openapi.kiwoom.com)에 현재 공인IP 재등록 → 키움 ka10058(투자자별일별매매종목)로 연동</div>
+    </div>
+  
+    <div class="card locked">
+      <div class="ttl">연기금 순매수/순매도 top5 <span class="tag lock">잠금</span></div>
+      <div class="lockbody">
+    사모펀드와 동일한 잠금입니다. 키움 REST의 ka10058 TR이 연기금·사모 등 주체별 일별 매매 상위종목을 제공하므로,<br>
+    키움 IP 재등록(현재 8050 오류 = 유동IP 변경으로 포털 등록 IP 불일치)만 되면 이 두 섹션과 3주체 수급강도까지 자동 활성화되도록 확장 예정입니다.</div>
+    </div>
+</div>
+
+<div class="sec">수급 강도 top5 — 기준일 26.07.13 (외국인+기관 순매수금액 ÷ 해당일 거래대금, KRX 확정치)</div>
+<div class="grid g2">
+  <div class="card"><div class="ttl">매수 강도 상위 <span class="tag">그날 거래대금의 몇 %를 순매수했나</span></div><table class="rank">
+    <tr><th>종목</th><th>거래대금 대비</th><th>금액(억원)</th></tr>
+    <tr><td>LG이노텍</td><td class="up">+50.2%</td><td>1,640</td></tr><tr><td>S-Oil</td><td class="up">+49.1%</td><td>561</td></tr><tr><td>이수페타시스</td><td class="up">+37.5%</td><td>471</td></tr><tr><td>피에스케이</td><td class="up">+35.5%</td><td>817</td></tr><tr><td>DB하이텍</td><td class="up">+35.4%</td><td>168</td></tr>
+  </table></div>
+  <div class="card"><div class="ttl">매도 강도 상위</div><table class="rank">
+    <tr><th>종목</th><th>거래대금 대비</th><th>금액(억원)</th></tr>
+    <tr><td>LG이노텍</td><td class="dn">-45.6%</td><td>1,489</td></tr><tr><td>HD건설기계</td><td class="dn">-41.0%</td><td>163</td></tr><tr><td>한국콜마</td><td class="dn">-31.3%</td><td>200</td></tr><tr><td>LG디스플레이</td><td class="dn">-30.9%</td><td>142</td></tr><tr><td>대주전자재료</td><td class="dn">-30.3%</td><td>56</td></tr>
+  </table></div>
+</div>
+<div class="mini" style="margin-top:-6px">※ 요청하신 외국인·사모·연기금 3주체 기준 수급강도는 사모/연기금 상위종목 데이터가 잠금 상태라, 현재는 외국인+기관 합산으로 산출합니다. KRX 로그인 또는 키움 단말기 해제 시 3주체 기준으로 전환됩니다.</div>
+
+<div class="src">
+  소스: 지수 네이버 실시간(KOSCOM) + KRX 오픈API 확정치 · 예탁금/신용잔고 네이버 증시자금동향(금융투자협회 집계) · 투자자별 순매수 네이버 투자자별매매동향(KOSCOM) · 순매매 상위 네이버 외국인/기관 순매매 상위<br>
+  단위: 순매수 억원 · 예탁금/신용 조원 · 상위종목 금액 억원, 수량 천주 · 생성 스크립트: claude_work\sugup_agent\sugup_dashboard.js
+</div>
+</body></html>
