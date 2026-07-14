@@ -2,7 +2,7 @@ name: Update Sugup Dashboard
 
 on:
   schedule:
-    - cron: '0 23 * * *'   # 08:00 KST (전일 마감 데이터 기준 아침 브리핑용)
+    - cron: '0 23 * * 0-4'   # 평일 08:00 KST (UTC 일~목 23:00) — 전일 마감 데이터 기준 아침 브리핑용
   workflow_dispatch:        # 수동 실행 버튼
 
 permissions:
