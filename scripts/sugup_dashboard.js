@@ -161,10 +161,26 @@ async function fetchKrxTradeValueMap(basDd) {
     try {
       const r = await fetch(`https://data-dbg.krx.co.kr/svc/apis/${ep}?basDd=${basDd}`, { headers: { AUTH_KEY: key } });
       const j = await r.json();
+      if (j.respCode) { console.log(`      KRX ${ep} 오류: ${j.respMsg} (${j.respCode})`); continue; }
       const rows = Object.values(j).find(Array.isArray) || [];
       for (const row of rows) if (row.ISU_CD) map[row.ISU_CD] = { trdval: num(row.ACC_TRDVAL), close: num(row.TDD_CLSPRC), flucRt: num(row.FLUC_RT) };
-    } catch (e) { /* 실패 시 해당 시장만 누락 */ }
+    } catch (e) { console.log(`      KRX ${ep} 실패: ${e.message}`); }
   }
+  return map;
+}
+
+// KRX 접근 불가 시(해외IP 등) 폴백: 네이버 fchart 일별시세로 거래대금 근사(종가×거래량)
+async function fetchNaverTrdValApprox(codes, basDd) {
+  const map = {};
+  const one = async (code) => {
+    try {
+      const t = await getText(`https://fchart.stock.naver.com/sise.nhn?symbol=${code}&timeframe=day&count=8&requestType=0`);
+      for (const m of t.matchAll(/data="(\d{8})\|[\d.]+\|[\d.]+\|[\d.]+\|([\d.]+)\|(\d+)"/g)) {
+        if (m[1] === basDd) { map[code] = { trdval: num(m[2]) * num(m[3]), close: num(m[2]), approx: true }; return; }
+      }
+    } catch (e) { /* 개별 종목 누락 허용 */ }
+  };
+  for (let i = 0; i < codes.length; i += 10) await Promise.all(codes.slice(i, i + 10).map(one));
   return map;
 }
 
@@ -241,7 +257,7 @@ function render(data) {
       }
       return [...m.values()]
         .filter(r => r.amtM >= 5000) // 순매수 50억원 미만 초소형 노이즈 제외
-        .map(r => { const tv = trdvalMap[r.code]; return { ...r, trdval: tv ? tv.trdval : null }; })
+        .map(r => { const tv = trdvalMap[r.code]; return { ...r, trdval: tv ? tv.trdval : null, approx: !!(tv && tv.approx) }; })
         .filter(r => r.trdval > 0)
         .map(r => ({ ...r, ratio: r.amtM * 1000000 / r.trdval * 100 }))
         .sort((a, b) => b.ratio - a.ratio).slice(0, 5);
@@ -395,7 +411,7 @@ function render(data) {
     키움 IP 재등록(현재 8050 오류 = 유동IP 변경으로 포털 등록 IP 불일치)만 되면 이 두 섹션과 3주체 수급강도까지 자동 활성화되도록 확장 예정입니다.`)}
 </div>
 
-<div class="sec">수급 강도 top5 — 기준일 ${rankDate} (외국인+기관 순매수금액 ÷ 해당일 거래대금, KRX 확정치)</div>
+<div class="sec">수급 강도 top5 — 기준일 ${rankDate} (외국인+기관 순매수금액 ÷ 해당일 거래대금${[...st.top, ...st.bottom].some(r => r.approx) ? ', 거래대금은 종가×거래량 근사(네이버)' : ', KRX 확정치'})</div>
 <div class="grid g2">
   <div class="card"><div class="ttl">매수 강도 상위 <span class="tag">그날 거래대금의 몇 %를 순매수했나</span></div>${stTable(st.top, 'up')}</div>
   <div class="card"><div class="ttl">매도 강도 상위</div>${stTable(st.bottom, 'dn')}</div>
@@ -430,7 +446,15 @@ function render(data) {
   const basDd = rankDateRaw ? '20' + rankDateRaw.replace(/\./g, '') : null;
   console.log(`[5/6] KRX 종목별 거래대금 수집 (기준일 ${basDd})...`);
   const trdvalMap = basDd ? await fetchKrxTradeValueMap(basDd) : {};
-  console.log(`      ${Object.keys(trdvalMap).length}종목`);
+  console.log(`      KRX ${Object.keys(trdvalMap).length}종목`);
+  // KRX가 막힌 환경(GitHub Actions 등 해외IP)이면 네이버 일별시세로 근사 폴백
+  const allCodes = [...new Set([f01b, f01s, f02b, f02s, i01b, i01s, i02b, i02s].flatMap(l => l.rows.map(r => r.code)))];
+  const missing = allCodes.filter(c => !trdvalMap[c]);
+  if (basDd && missing.length) {
+    const approx = await fetchNaverTrdValApprox(missing, basDd);
+    Object.assign(trdvalMap, approx);
+    console.log(`      네이버 근사 폴백 ${Object.keys(approx).length}/${missing.length}종목`);
+  }
   console.log('[6/6] HTML 생성...');
   const now = new Date(Date.now() + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 16) + ' KST';
   const html = render({ rt, krx, dep, invK, invQ, ranks: { f01b, f01s, f02b, f02s, i01b, i01s, i02b, i02s }, trdvalMap, now });
