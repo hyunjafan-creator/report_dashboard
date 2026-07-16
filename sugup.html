@@ -42,23 +42,23 @@
   .src { color:var(--dim); font-size:11px; line-height:1.8; margin-top:20px; border-top:1px solid var(--line); padding-top:12px; }
 </style></head><body>
 <h1>국내 증시 수급 대시보드</h1>
-<div class="meta">갱신: 2026-07-16 08:48 KST · 지수 장마감 기준 · 투자자별 순매수 기준일 26.07.15 · 예탁금/신용 최신일 26.07.14</div>
+<div class="meta">갱신: 2026-07-16 13:30 KST · 지수 장중 기준 · 투자자별 순매수 기준일 26.07.16 · 예탁금/신용 최신일 26.07.14</div>
 
 <div class="grid g4">
   
     <div class="card idx">
-      <div class="ttl">코스피 <span class="tag">장마감</span></div>
-      <div class="big fl">7,284.41</div>
-      <div class="sub fl">0.00 (0.00%)</div>
-      <div class="mini">고가 0.00 · 저가 0.00 · 거래대금 0.0조원</div>
+      <div class="ttl">코스피 <span class="tag">장중</span></div>
+      <div class="big dn">6,802.81</div>
+      <div class="sub dn">-481.60 (-6.61%)</div>
+      <div class="mini">고가 6,995.93 · 저가 6,730.87 · 거래대금 18.3조원</div>
       <div class="mini dim">전영업일 확정(KRX 20260715): 7,284.41 (+6.24%)</div>
     </div>
   
     <div class="card idx">
-      <div class="ttl">코스닥 <span class="tag">장마감</span></div>
-      <div class="big fl">829.43</div>
-      <div class="sub fl">0.00 (0.00%)</div>
-      <div class="mini">고가 0.00 · 저가 0.00 · 거래대금 0.0조원</div>
+      <div class="ttl">코스닥 <span class="tag">장중</span></div>
+      <div class="big dn">792.39</div>
+      <div class="sub dn">-37.04 (-4.47%)</div>
+      <div class="mini">고가 816.47 · 저가 786.59 · 거래대금 3.3조원</div>
       <div class="mini dim">전영업일 확정(KRX 20260715): 829.43 (+5.80%)</div>
     </div>
   <div class="card">
@@ -75,30 +75,74 @@
   </div>
 </div>
 
-<div class="sec">당일 투자자별 순매수 (억원) — 기준일 26.07.15</div>
+
+<div class="sec">시장 심리 — 기준일 26.07.14 (KRX 확정치 기반)</div>
+<div class="grid g3">
+  <div class="card">
+    <div class="ttl">코스피 Fear &amp; Greed <span class="tag">자체산출</span></div>
+    <svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg" style="max-width:280px;margin:0 auto">
+    <path d="M30.0,130.0 A100,100 0 0 1 59.3,59.3 L77.7,77.7 A74,74 0 0 0 56.0,130.0 Z" fill="#2456b8"/><path d="M59.3,59.3 A100,100 0 0 1 114.4,31.2 L118.4,56.9 A74,74 0 0 0 77.7,77.7 Z" fill="#3d8bfd"/><path d="M114.4,31.2 A100,100 0 0 1 145.6,31.2 L141.6,56.9 A74,74 0 0 0 118.4,56.9 Z" fill="#5a6478"/><path d="M145.6,31.2 A100,100 0 0 1 200.7,59.3 L182.3,77.7 A74,74 0 0 0 141.6,56.9 Z" fill="#e2506c"/><path d="M200.7,59.3 A100,100 0 0 1 230.0,130.0 L204.0,130.0 A74,74 0 0 0 182.3,77.7 Z" fill="#c81e40"/>
+    <line x1="130" y1="130" x2="103.6" y2="73.9" stroke="#dbe4f5" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="130" cy="130" r="6" fill="#dbe4f5"/>
+    <text x="130" y="104" text-anchor="middle" style="font-size:30px;font-weight:bold" fill="#dbe4f5">36</text>
+    <text x="18" y="146" class="axl">공포 0</text>
+    <text x="242" y="146" class="axl" text-anchor="end">100 탐욕</text>
+  </svg>
+  <div style="text-align:center;font-size:15px;font-weight:bold;margin-top:2px">공포</div>
+    <table style="margin-top:10px;font-size:11px">
+      <tr><td class="lbl" style="font-size:11px">주가 모멘텀</td><td style="font-size:11px">125일선 대비 +5.2%</td><td class="up" style="font-size:11px">83</td></tr><tr><td class="lbl" style="font-size:11px">변동성(VKOSPI)</td><td style="font-size:11px">50일 평균 대비 +6.5%</td><td class="dn" style="font-size:11px">42</td></tr><tr><td class="lbl" style="font-size:11px">시장 폭(ADR-20)</td><td style="font-size:11px">코스피 ADR 60.7</td><td class="dn" style="font-size:11px">0</td></tr><tr><td class="lbl" style="font-size:11px">상승종목 비율(당일)</td><td style="font-size:11px">상승 219 : 하락 662</td><td class="dn" style="font-size:11px">25</td></tr><tr><td class="lbl" style="font-size:11px">풋/콜 비율(K200옵션)</td><td style="font-size:11px">P/C 0.85</td><td class="up" style="font-size:11px">69</td></tr><tr><td class="lbl" style="font-size:11px">안전자산 대비(20일)</td><td style="font-size:11px">주식-채권 -20.5%p</td><td class="dn" style="font-size:11px">0</td></tr>
+    </table>
+    <div class="mini">CNN Fear&amp;Greed 방법론을 코스피에 맞춰 6개 요소 동일가중 산출 (0 공포 ~ 100 탐욕)</div>
+  </div>
+  <div class="card">
+    <div class="ttl">VKOSPI (코스피200 변동성지수)</div>
+    <div class="big up">83.97</div>
+    <div class="sub up">+0.64 (+0.8%)</div>
+    <div class="mini" style="margin-bottom:8px">55영업일 최고 96.9 · 최저 53.6 — 높을수록 공포(통상 20 미만 안정, 30 이상 불안)</div>
+    <svg viewBox="0 0 560 150" xmlns="http://www.w3.org/2000/svg">
+    <line x1="46" y1="126.0" x2="546" y2="126.0" class="grid"/><line x1="46" y1="70.0" x2="546" y2="70.0" class="grid"/><line x1="46" y1="14.0" x2="546" y2="14.0" class="grid"/>
+    <polygon points="46,126 46.0,124.8 55.3,126.0 64.5,122.4 73.8,122.3 83.0,120.8 92.3,124.0 101.6,120.0 110.8,109.2 120.1,106.7 129.3,108.0 138.6,94.9 147.9,83.2 157.1,67.7 166.4,76.0 175.6,71.4 184.9,73.1 194.1,77.1 203.4,80.0 212.7,80.1 221.9,91.4 231.2,88.5 240.4,81.5 249.7,79.4 259.0,72.6 268.2,72.7 277.5,74.3 286.7,74.7 296.0,74.7 305.3,66.4 314.5,28.7 323.8,36.2 333.0,38.9 342.3,32.2 351.6,37.5 360.8,46.7 370.1,58.6 379.3,57.1 388.6,48.5 397.9,38.7 407.1,33.4 416.4,19.5 425.6,18.8 434.9,24.9 444.1,14.0 453.4,22.1 462.7,35.4 471.9,41.2 481.2,33.8 490.4,40.0 499.7,43.0 509.0,37.3 518.2,43.6 527.5,62.5 536.7,49.1 546.0,47.5 546.0,126" fill="#c86ee0" opacity="0.10"/>
+    <polyline points="46.0,124.8 55.3,126.0 64.5,122.4 73.8,122.3 83.0,120.8 92.3,124.0 101.6,120.0 110.8,109.2 120.1,106.7 129.3,108.0 138.6,94.9 147.9,83.2 157.1,67.7 166.4,76.0 175.6,71.4 184.9,73.1 194.1,77.1 203.4,80.0 212.7,80.1 221.9,91.4 231.2,88.5 240.4,81.5 249.7,79.4 259.0,72.6 268.2,72.7 277.5,74.3 286.7,74.7 296.0,74.7 305.3,66.4 314.5,28.7 323.8,36.2 333.0,38.9 342.3,32.2 351.6,37.5 360.8,46.7 370.1,58.6 379.3,57.1 388.6,48.5 397.9,38.7 407.1,33.4 416.4,19.5 425.6,18.8 434.9,24.9 444.1,14.0 453.4,22.1 462.7,35.4 471.9,41.2 481.2,33.8 490.4,40.0 499.7,43.0 509.0,37.3 518.2,43.6 527.5,62.5 536.7,49.1 546.0,47.5" fill="none" stroke="#c86ee0" stroke-width="2"/>
+    <circle cx="546.0" cy="47.5" r="3.5" fill="#c86ee0"/>
+    <text x="46.0" y="144" class="axl" text-anchor="start">26.04.23</text><text x="296.0" y="144" class="axl" text-anchor="middle">26.06.05</text><text x="546.0" y="144" class="axl" text-anchor="end">26.07.14</text><text x="40" y="129.5" class="axl" text-anchor="end">53.6</text><text x="40" y="73.5" class="axl" text-anchor="end">75.3</text><text x="40" y="17.5" class="axl" text-anchor="end">96.9</text>
+    <text x="46" y="12" class="axl">pt</text>
+  </svg>
+  </div>
+  <div class="card">
+    <div class="ttl">ADR 등락비율 (20일)</div>
+    <div class="big">60.7<span style="font-size:14px"> 코스피</span></div>
+    <div class="sub fl">침체권(바닥 신호)</div>
+    <div class="big" style="font-size:22px;margin-top:10px">60.4<span style="font-size:13px"> 코스닥</span></div>
+    <div class="sub fl">침체권(바닥 신호)</div>
+    <div class="mini">ADR = 20일 상승종목수 합 ÷ 하락종목수 합 × 100. 75 이하 침체(반등 임박), 120 이상 과열 신호로 해석.<br>
+    최근 거래일: 코스피 상승 219 / 하락 662 · 코스닥 상승 445 / 하락 1212</div>
+  </div>
+</div>
+
+<div class="sec">당일 투자자별 순매수 (억원) — 기준일 26.07.16</div>
 <div class="grid g2">
   <div class="card">
     <div class="ttl">주요 주체</div>
     <table>
       <tr><th>주체</th><th>코스피</th><th>코스닥</th></tr>
       <tr><td class="lbl">개인</td>
-      <td class="dn">-24,666</td>
-      <td class="dn">-1,542</td></tr>
+      <td class="up">+28,911</td>
+      <td class="up">+3,565</td></tr>
       <tr><td class="lbl">외국인</td>
-      <td class="up">+23,031</td>
-      <td class="up">+231</td></tr>
+      <td class="dn">-13,306</td>
+      <td class="dn">-2,824</td></tr>
       <tr><td class="lbl">연기금등</td>
-      <td class="up">+205</td>
-      <td class="up">+97</td></tr>
+      <td class="up">+322</td>
+      <td class="dn">-256</td></tr>
       <tr><td class="lbl">투신(사모 포함)<span class="note">네이버 분류상 사모+투신 합산</span></td>
-      <td class="up">+10,538</td>
-      <td class="up">+1,817</td></tr>
+      <td class="dn">-2,296</td>
+      <td class="up">+203</td></tr>
       <tr><td class="lbl">금융투자</td>
-      <td class="dn">-8,431</td>
-      <td class="dn">-884</td></tr>
+      <td class="dn">-13,630</td>
+      <td class="dn">-688</td></tr>
       <tr><td class="lbl">기관계</td>
-      <td class="up">+1,992</td>
-      <td class="up">+1,086</td></tr>
+      <td class="dn">-16,120</td>
+      <td class="dn">-823</td></tr>
     </table>
   </div>
   <div class="card">
@@ -106,17 +150,17 @@
     <table>
       <tr><th>주체</th><th>코스피</th><th>코스닥</th></tr>
       <tr><td class="lbl">보험</td>
-      <td class="dn">-421</td>
-      <td class="up">+74</td></tr>
+      <td class="dn">-528</td>
+      <td class="dn">-60</td></tr>
       <tr><td class="lbl">은행</td>
-      <td class="up">+39</td>
-      <td class="dn">-4</td></tr>
+      <td class="dn">-2</td>
+      <td class="dn">-2</td></tr>
       <tr><td class="lbl">기타금융</td>
-      <td class="up">+62</td>
-      <td class="dn">-14</td></tr>
+      <td class="up">+14</td>
+      <td class="dn">-20</td></tr>
       <tr><td class="lbl">기타법인</td>
-      <td class="dn">-357</td>
-      <td class="up">+226</td></tr>
+      <td class="up">+516</td>
+      <td class="up">+83</td></tr>
     </table>
     <div class="mini">사모펀드 단독 수치는 KRX 정보데이터시스템 로그인 전용으로 전환되어 현재 무료 소스가 없습니다. 네이버(KOSCOM) 분류는 투신(사모) 합산 기준.</div>
   </div>
