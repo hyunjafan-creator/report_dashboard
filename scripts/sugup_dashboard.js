@@ -184,6 +184,132 @@ async function fetchNaverTrdValApprox(codes, basDd) {
   return map;
 }
 
+// ---------- 6) 시장 심리 지표 (VKOSPI · Fear&Greed · ADR) ----------
+// 일별 파생 데이터 캐시: 스크립트 옆 sugup_cache.json (클라우드에선 워크플로가 커밋해 증분 유지)
+//   { "YYYYMMDD": { hol:true } | { ksUp,ksDn,kqUp,kqDn(등락종목수), vkospi, bond(KRX채권 총수익지수), pcr(K200옵션 풋/콜 거래대금비) } }
+const CACHE_FILE = path.join(__dirname, 'sugup_cache.json');
+const avg = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+
+async function updateDailyCache(kospiHist) {
+  let cache = {};
+  try { cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')); } catch (e) {}
+  const key = getKrxKey();
+  if (!key) return cache;
+  // 네이버 지수 캔들로 거래일 교차검증: KRX 응답이 비어도 캔들이 있으면 휴장이 아니라 일시 장애 →
+  // hol 마킹하지 않고 건너뛴다(다음 실행 때 재시도). 캔들 목록에 없는 과거 평일만 휴장 확정.
+  const candleDates = new Set((kospiHist || []).map(h => h.date));
+  const latestCandle = kospiHist && kospiHist.length ? kospiHist[kospiHist.length - 1].date : null;
+  // 과거 KRX 일시 장애로 잘못 hol 처리된 날짜 복구
+  for (const d of Object.keys(cache)) if (cache[d].hol && candleDates.has(d)) delete cache[d];
+  const call = async (ep, dd) => {
+    try {
+      const r = await fetch(`https://data-dbg.krx.co.kr/svc/apis/${ep}?basDd=${dd}`, { headers: { AUTH_KEY: key } });
+      const j = await r.json();
+      if (j.respCode) return null;
+      return Object.values(j).find(Array.isArray) || [];
+    } catch (e) { return null; }
+  };
+  const upDn = (rows) => { let up = 0, dn = 0; for (const r of rows) { const f = num(r.FLUC_RT); if (f > 0) up++; else if (f < 0) dn++; } return [up, dn]; };
+
+  let d = new Date(), tradingSeen = 0, pcrDone = false, krxDead = false;
+  for (let scanned = 0; tradingSeen < 55 && scanned < 90 && !krxDead; scanned++) {
+    const dd = ymd(d);
+    const dow = d.getUTCDay();
+    d = new Date(d.getTime() - 86400000);
+    if (dow === 0 || dow === 6) continue;
+    const e = cache[dd] || {};
+    if (e.hol) continue;
+    if (latestCandle && dd > latestCandle) continue; // 아직 개장 전/미발표 날짜
+    // 거래일 판별 겸 코스피 등락종목수
+    if (e.ksUp == null && !e.trading) {
+      if (candleDates.size && !candleDates.has(dd)) { cache[dd] = { hol: true }; continue; } // 캔들 없음 = 휴장 확정
+      const stk = await call('sto/stk_bydd_trd', dd);
+      if (stk == null) { krxDead = true; break; } // KRX 접근 불가 → 기존 캐시로 진행
+      if (!stk.length) continue; // 캔들은 있는데 KRX 미반영/일시 장애 → 마킹 없이 건너뛰고 다음 실행 때 재시도
+      [e.ksUp, e.ksDn] = upDn(stk); e.trading = true;
+    }
+    tradingSeen++;
+    if (tradingSeen <= 25 && e.kqUp == null) { const ksq = await call('sto/ksq_bydd_trd', dd); if (ksq && ksq.length) [e.kqUp, e.kqDn] = upDn(ksq); }
+    if (e.vkospi == null) { const drv = await call('idx/drvprod_dd_trd', dd); const vk = (drv || []).find(r => r.IDX_NM === '코스피 200 변동성지수'); if (vk) e.vkospi = num(vk.CLSPRC_IDX); }
+    if (tradingSeen <= 25 && e.bond == null) { const bd = await call('idx/bon_dd_trd', dd); const kb = (bd || []).find(r => (r.BND_IDX_GRP_NM || '') === 'KRX 채권지수'); if (kb) e.bond = num(kb.TOT_EARNG_IDX); }
+    if (!pcrDone && e.pcr == null) { // 풋콜비율은 최신 거래일 것만 사용
+      const opt = await call('drv/opt_bydd_trd', dd);
+      if (opt && opt.length) {
+        let p = 0, c = 0;
+        for (const o of opt) {
+          const pn = o.PROD_NM || '';
+          if (!pn.includes('코스피200') || pn.includes('미니')) continue;
+          const v = num(o.ACC_TRDVAL) || 0;
+          if (o.RGHT_TP_NM === 'PUT') p += v; else if (o.RGHT_TP_NM === 'CALL') c += v;
+        }
+        if (c > 0) e.pcr = Math.round(p / c * 1000) / 1000;
+      }
+    }
+    if (e.pcr != null) pcrDone = true;
+    cache[dd] = e;
+  }
+  try { fs.writeFileSync(CACHE_FILE, JSON.stringify(cache), 'utf8'); } catch (e) {}
+  return cache;
+}
+
+async function fetchKospiHistory(count = 200) { // 종가 이력 (F&G 모멘텀·안전자산용)
+  try {
+    const t = await getText(`https://fchart.stock.naver.com/sise.nhn?symbol=KOSPI&timeframe=day&count=${count}&requestType=0`);
+    return [...t.matchAll(/data="(\d{8})\|([\d.]+)\|[\d.]+\|[\d.]+\|([\d.]+)\|\d+"/g)].map(m => ({ date: m[1], close: num(m[3]) }));
+  } catch (e) { return []; }
+}
+
+// CNN Fear&Greed 방법론을 코스피에 맞춘 자체 산출 (요소별 0~100, 동일가중 평균)
+function computeFearGreed(cache, kospiHist) {
+  const tds = Object.keys(cache).filter(d => cache[d] && !cache[d].hol && cache[d].trading).sort((a, b) => b.localeCompare(a));
+  if (!tds.length) return null;
+  const latest = tds[0];
+  const clamp = (v) => Math.max(0, Math.min(100, v));
+  const comps = [];
+  // 1. 주가 모멘텀: 코스피 종가 vs 125일 이동평균 (±8% → 0~100)
+  const closes = kospiHist.filter(h => h.date <= latest).map(h => h.close);
+  if (closes.length >= 125) {
+    const c = closes[closes.length - 1], ma = avg(closes.slice(-125));
+    const dev = (c / ma - 1) * 100;
+    comps.push({ name: '주가 모멘텀', score: clamp(50 + dev * 50 / 8), detail: `125일선 대비 ${signTxt(dev, 1)}%` });
+  }
+  // 2. 변동성(역방향): VKOSPI vs 50일 평균 (+40% → 0, -40% → 100)
+  const vks = tds.map(d => cache[d].vkospi).filter(v => v != null);
+  if (vks.length >= 20) {
+    const win = Math.min(50, vks.length);
+    const dev = (vks[0] / avg(vks.slice(0, win)) - 1) * 100;
+    comps.push({ name: '변동성(VKOSPI)', score: clamp(50 - dev * 50 / 40), detail: `${win}일 평균 대비 ${signTxt(dev, 1)}%` });
+  }
+  // 3. 시장 폭: 코스피 ADR-20 (70 → 0, 130 → 100)
+  const cntDays = tds.filter(d => cache[d].ksUp != null).slice(0, 20);
+  if (cntDays.length >= 15) {
+    const up = cntDays.reduce((s, d) => s + cache[d].ksUp, 0), dn = cntDays.reduce((s, d) => s + cache[d].ksDn, 0);
+    const adr = dn > 0 ? up / dn * 100 : 130;
+    comps.push({ name: '시장 폭(ADR-20)', score: clamp((adr - 70) * 100 / 60), detail: `코스피 ADR ${fmt(adr, 1)}` });
+  }
+  // 4. 상승종목 비율(최근 거래일)
+  const l = cache[latest];
+  if (l.ksUp != null && l.ksUp + l.ksDn > 0) {
+    const ratio = l.ksUp / (l.ksUp + l.ksDn) * 100;
+    comps.push({ name: '상승종목 비율(당일)', score: clamp(ratio), detail: `상승 ${l.ksUp} : 하락 ${l.ksDn}` });
+  }
+  // 5. 풋/콜 거래대금 비율: K200옵션 (1.4 → 0, 0.6 → 100)
+  const pcrDay = tds.find(d => cache[d].pcr != null);
+  if (pcrDay) comps.push({ name: '풋/콜 비율(K200옵션)', score: clamp((1.4 - cache[pcrDay].pcr) * 100 / 0.8), detail: `P/C ${fmt(cache[pcrDay].pcr, 2)}` });
+  // 6. 안전자산 수요: 코스피 20일 수익률 − KRX채권지수 20일 수익률 (±6% → 0~100)
+  const bonds = tds.map(d => cache[d].bond).filter(v => v != null);
+  if (bonds.length >= 21 && closes.length >= 21) {
+    const kRet = (closes[closes.length - 1] / closes[closes.length - 21] - 1) * 100;
+    const bRet = (bonds[0] / bonds[20] - 1) * 100;
+    const spread = kRet - bRet;
+    comps.push({ name: '안전자산 대비(20일)', score: clamp(50 + spread * 50 / 6), detail: `주식-채권 ${signTxt(spread, 1)}%p` });
+  }
+  if (!comps.length) return null;
+  const score = Math.round(avg(comps.map(c => c.score)));
+  const label = score <= 25 ? '극단적 공포' : score <= 45 ? '공포' : score < 55 ? '중립' : score < 75 ? '탐욕' : '극단적 탐욕';
+  return { score, label, comps, latest, tds };
+}
+
 // ---------- SVG 라인차트 ----------
 function svgChart(series, { width = 560, height = 190, unitDiv = 10000, unitLabel = '조원', color = '#4f8ef7' } = {}) {
   // series: [{date, v}] 과거→최신 순으로 정렬해 전달
@@ -213,9 +339,32 @@ function svgChart(series, { width = 560, height = 190, unitDiv = 10000, unitLabe
   </svg>`;
 }
 
+// Fear&Greed 반원 게이지 SVG (0=극단공포 좌측, 100=극단탐욕 우측)
+function svgGauge(score, label) {
+  const W = 260, H = 150, cx = 130, cy = 130, R = 100, r = 74;
+  const arc = (a0, a1, R1, R2, color) => {
+    const p = (a, rad) => [cx + rad * Math.cos(Math.PI * (1 - a / 100)), cy - rad * Math.sin(Math.PI * (1 - a / 100))];
+    const [x0, y0] = p(a0, R1), [x1, y1] = p(a1, R1), [x2, y2] = p(a1, R2), [x3, y3] = p(a0, R2);
+    const lg = (a1 - a0) > 50 ? 1 : 0;
+    return `<path d="M${x0.toFixed(1)},${y0.toFixed(1)} A${R1},${R1} 0 ${lg} 1 ${x1.toFixed(1)},${y1.toFixed(1)} L${x2.toFixed(1)},${y2.toFixed(1)} A${R2},${R2} 0 ${lg} 0 ${x3.toFixed(1)},${y3.toFixed(1)} Z" fill="${color}"/>`;
+  };
+  const zones = [[0, 25, '#2456b8'], [25, 45, '#3d8bfd'], [45, 55, '#5a6478'], [55, 75, '#e2506c'], [75, 100, '#c81e40']];
+  const na = Math.PI * (1 - score / 100);
+  const nx = cx + (r - 12) * Math.cos(na), ny = cy - (r - 12) * Math.sin(na);
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="max-width:280px;margin:0 auto">
+    ${zones.map(z => arc(z[0], z[1], R, r, z[2])).join('')}
+    <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#dbe4f5" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="6" fill="#dbe4f5"/>
+    <text x="${cx}" y="${cy - 26}" text-anchor="middle" style="font-size:30px;font-weight:bold" fill="#dbe4f5">${score}</text>
+    <text x="18" y="${H - 4}" class="axl">공포 0</text>
+    <text x="${W - 18}" y="${H - 4}" class="axl" text-anchor="end">100 탐욕</text>
+  </svg>
+  <div style="text-align:center;font-size:15px;font-weight:bold;margin-top:2px">${label}</div>`;
+}
+
 // ---------- HTML 렌더링 ----------
 function render(data) {
-  const { rt, krx, dep, invK, invQ, ranks, trdvalMap, now } = data;
+  const { rt, krx, dep, invK, invQ, ranks, trdvalMap, cache, fg, now } = data;
   const kospi = rt.KOSPI, kosdaq = rt.KOSDAQ;
   const stateTxt = kospi.state === 'OPEN' ? '장중' : '장마감';
   const invKr = invK[0], invQr = invQ[0];
@@ -348,6 +497,58 @@ function render(data) {
   </div>
 </div>
 
+${(() => {
+  if (!fg) return '';
+  const tds = fg.tds;
+  const fmtD = (d) => d.slice(2, 4) + '.' + d.slice(4, 6) + '.' + d.slice(6, 8);
+  // VKOSPI 카드
+  const vkDays = tds.filter(d => cache[d].vkospi != null);
+  const vk0 = vkDays.length ? cache[vkDays[0]].vkospi : null;
+  const vk1 = vkDays.length > 1 ? cache[vkDays[1]].vkospi : null;
+  const vkChg = vk0 != null && vk1 != null ? vk0 - vk1 : null;
+  const vkChart = vkDays.length >= 10 ? svgChart(
+    vkDays.slice().reverse().map(d => ({ date: fmtD(d), v: cache[d].vkospi })),
+    { width: 560, height: 150, unitDiv: 1, unitLabel: 'pt', color: '#c86ee0' }) : '';
+  // ADR 카드 (양 시장 20일)
+  const adrOf = (upK, dnK) => {
+    const ds = tds.filter(d => cache[d][upK] != null).slice(0, 20);
+    if (ds.length < 15) return null;
+    const up = ds.reduce((s, d) => s + cache[d][upK], 0), dn = ds.reduce((s, d) => s + cache[d][dnK], 0);
+    return dn > 0 ? up / dn * 100 : null;
+  };
+  const adrKs = adrOf('ksUp', 'ksDn'), adrKq = adrOf('kqUp', 'kqDn');
+  const adrTag = (v) => v == null ? '' : v >= 120 ? '과열권' : v <= 75 ? '침체권(바닥 신호)' : '중립권';
+  const lt = cache[fg.latest];
+  return `
+<div class="sec">시장 심리 — 기준일 ${fmtD(fg.latest)} (KRX 확정치 기반)</div>
+<div class="grid g3">
+  <div class="card">
+    <div class="ttl">코스피 Fear &amp; Greed <span class="tag">자체산출</span></div>
+    ${svgGauge(fg.score, fg.label)}
+    <table style="margin-top:10px;font-size:11px">
+      ${fg.comps.map(c => `<tr><td class="lbl" style="font-size:11px">${c.name}</td><td style="font-size:11px">${c.detail}</td><td class="${c.score >= 55 ? 'up' : c.score <= 45 ? 'dn' : 'fl'}" style="font-size:11px">${Math.round(c.score)}</td></tr>`).join('')}
+    </table>
+    <div class="mini">CNN Fear&amp;Greed 방법론을 코스피에 맞춰 ${fg.comps.length}개 요소 동일가중 산출 (0 공포 ~ 100 탐욕)</div>
+  </div>
+  <div class="card">
+    <div class="ttl">VKOSPI (코스피200 변동성지수)</div>
+    <div class="big ${vkChg > 0 ? 'up' : vkChg < 0 ? 'dn' : 'fl'}">${vk0 != null ? fmt(vk0, 2) : '-'}</div>
+    <div class="sub ${vkChg > 0 ? 'up' : vkChg < 0 ? 'dn' : 'fl'}">${vkChg != null ? signTxt(vkChg, 2) + ' (' + signTxt(vkChg / vk1 * 100, 1) + '%)' : ''}</div>
+    <div class="mini" style="margin-bottom:8px">${vkDays.length}영업일 최고 ${fmt(Math.max(...vkDays.map(d => cache[d].vkospi)), 1)} · 최저 ${fmt(Math.min(...vkDays.map(d => cache[d].vkospi)), 1)} — 높을수록 공포(통상 20 미만 안정, 30 이상 불안)</div>
+    ${vkChart}
+  </div>
+  <div class="card">
+    <div class="ttl">ADR 등락비율 (20일)</div>
+    <div class="big">${adrKs != null ? fmt(adrKs, 1) : '-'}<span style="font-size:14px"> 코스피</span></div>
+    <div class="sub fl">${adrTag(adrKs)}</div>
+    <div class="big" style="font-size:22px;margin-top:10px">${adrKq != null ? fmt(adrKq, 1) : '-'}<span style="font-size:13px"> 코스닥</span></div>
+    <div class="sub fl">${adrTag(adrKq)}</div>
+    <div class="mini">ADR = 20일 상승종목수 합 ÷ 하락종목수 합 × 100. 75 이하 침체(반등 임박), 120 이상 과열 신호로 해석.<br>
+    최근 거래일: 코스피 상승 ${lt.ksUp ?? '-'} / 하락 ${lt.ksDn ?? '-'} · 코스닥 상승 ${lt.kqUp ?? '-'} / 하락 ${lt.kqDn ?? '-'}</div>
+  </div>
+</div>`;
+})()}
+
 <div class="sec">당일 투자자별 순매수 (억원) — 기준일 ${invKr ? invKr.date : '-'}</div>
 <div class="grid g2">
   <div class="card">
@@ -428,14 +629,14 @@ function render(data) {
 // ---------- 메인 ----------
 (async () => {
   const t0 = Date.now();
-  console.log('[1/6] 지수(실시간/확정) 수집...');
+  console.log('[1/7] 지수(실시간/확정) 수집...');
   const [rt, krx] = await Promise.all([fetchRealtimeIndex(), fetchKrxOfficialIndex()]);
-  console.log('[2/6] 예탁금/신용잔고 90영업일 수집...');
+  console.log('[2/7] 예탁금/신용잔고 90영업일 수집...');
   const dep = await fetchDepositCredit(90);
   console.log(`      ${dep.length}일 (${dep[dep.length - 1]?.date} ~ ${dep[0]?.date})`);
-  console.log('[3/6] 투자자별 순매수 수집...');
+  console.log('[3/7] 투자자별 순매수 수집...');
   const [invK, invQ] = await Promise.all([fetchInvestorTrend('01'), fetchInvestorTrend('02')]);
-  console.log('[4/6] 외국인/기관 순매매 상위 수집...');
+  console.log('[4/7] 외국인/기관 순매매 상위 수집...');
   const [f01b, f01s, f02b, f02s, i01b, i01s, i02b, i02s] = await Promise.all([
     fetchDealRank('01', '9000', 'buy'), fetchDealRank('01', '9000', 'sell'),
     fetchDealRank('02', '9000', 'buy'), fetchDealRank('02', '9000', 'sell'),
@@ -444,7 +645,7 @@ function render(data) {
   ]);
   const rankDateRaw = f01b.date || i01b.date; // '26.07.13' → '20260713'
   const basDd = rankDateRaw ? '20' + rankDateRaw.replace(/\./g, '') : null;
-  console.log(`[5/6] KRX 종목별 거래대금 수집 (기준일 ${basDd})...`);
+  console.log(`[5/7] KRX 종목별 거래대금 수집 (기준일 ${basDd})...`);
   const trdvalMap = basDd ? await fetchKrxTradeValueMap(basDd) : {};
   console.log(`      KRX ${Object.keys(trdvalMap).length}종목`);
   // KRX가 막힌 환경(GitHub Actions 등 해외IP)이면 네이버 일별시세로 근사 폴백
@@ -455,9 +656,14 @@ function render(data) {
     Object.assign(trdvalMap, approx);
     console.log(`      네이버 근사 폴백 ${Object.keys(approx).length}/${missing.length}종목`);
   }
-  console.log('[6/6] HTML 생성...');
+  console.log('[6/7] 시장 심리 지표 (VKOSPI·F&G·ADR) 캐시 갱신...');
+  const kospiHist = await fetchKospiHistory(); // 거래일 교차검증용으로 캐시 갱신보다 먼저
+  const cache = await updateDailyCache(kospiHist);
+  const fg = computeFearGreed(cache, kospiHist);
+  console.log(`      거래일 캐시 ${Object.keys(cache).filter(d => cache[d].trading).length}일, F&G ${fg ? fg.score + ' (' + fg.label + ', 요소 ' + fg.comps.length + '개)' : '산출 불가'}`);
+  console.log('[7/7] HTML 생성...');
   const now = new Date(Date.now() + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 16) + ' KST';
-  const html = render({ rt, krx, dep, invK, invQ, ranks: { f01b, f01s, f02b, f02s, i01b, i01s, i02b, i02s }, trdvalMap, now });
+  const html = render({ rt, krx, dep, invK, invQ, ranks: { f01b, f01s, f02b, f02s, i01b, i01s, i02b, i02s }, trdvalMap, cache, fg, now });
   let out;
   if (OUTFILE) { // 클라우드(GitHub Actions) 모드: 단일 파일만 출력
     out = OUTFILE;
