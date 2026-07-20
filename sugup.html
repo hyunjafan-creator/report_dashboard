@@ -40,25 +40,37 @@
   .lockbody { font-size:12px; color:var(--dim); line-height:1.8; }
   .sec { font-size:14px; font-weight:bold; margin:22px 0 10px; color:#aebfdd; }
   .src { color:var(--dim); font-size:11px; line-height:1.8; margin-top:20px; border-top:1px solid var(--line); padding-top:12px; }
+  .tabbar { display:flex; gap:8px; margin-bottom:16px; }
+  .tabbtn { background:var(--card); border:1px solid var(--line); color:var(--dim); padding:8px 18px; border-radius:9px; font-size:13px; font-weight:bold; cursor:pointer; font-family:inherit; }
+  .tabbtn.active { background:#233150; color:#cfe0ff; border-color:#3a4d78; }
+  .v-hot td { background:rgba(244,81,108,0.12); }
+  .v-warn td { background:rgba(226,160,63,0.10); }
+  .v-cool td { background:rgba(61,139,253,0.08); }
+  .prov td { border-top:1px solid #4f8ef7; border-bottom:1px solid #4f8ef7; }
 </style></head><body>
 <h1>국내 증시 수급 대시보드</h1>
-<div class="meta">갱신: 2026-07-20 08:44 KST · 지수 장마감 기준 · 투자자별 순매수 기준일 26.07.16 · 예탁금/신용 최신일 26.07.15</div>
+<div class="meta">갱신: 2026-07-20 09:29 KST · 지수 장중 기준 · 투자자별 순매수 기준일 26.07.20 · 예탁금/신용 최신일 26.07.15</div>
+<div class="tabbar">
+  <button class="tabbtn active" id="btn-main" onclick="showTab('main')">수급 현황</button>
+  <button class="tabbtn" id="btn-overheat" onclick="showTab('overheat')">과열지표</button>
+</div>
+<div id="tab-main">
 
 <div class="grid g4">
   
     <div class="card idx">
-      <div class="ttl">코스피 <span class="tag">장마감</span></div>
-      <div class="big fl">6,820.60</div>
-      <div class="sub fl">0.00 (0.00%)</div>
-      <div class="mini">고가 0.00 · 저가 0.00 · 거래대금 0.0조원</div>
+      <div class="ttl">코스피 <span class="tag">장중</span></div>
+      <div class="big dn">6,770.57</div>
+      <div class="sub dn">-50.03 (-0.73%)</div>
+      <div class="mini">고가 6,811.00 · 저가 6,515.24 · 거래대금 6.6조원</div>
       <div class="mini dim">전영업일 확정(KRX 20260716): 6,820.60 (-6.37%)</div>
     </div>
   
     <div class="card idx">
-      <div class="ttl">코스닥 <span class="tag">장마감</span></div>
-      <div class="big fl">791.84</div>
-      <div class="sub fl">0.00 (0.00%)</div>
-      <div class="mini">고가 0.00 · 저가 0.00 · 거래대금 0.0조원</div>
+      <div class="ttl">코스닥 <span class="tag">장중</span></div>
+      <div class="big dn">777.15</div>
+      <div class="sub dn">-14.69 (-1.86%)</div>
+      <div class="mini">고가 783.74 · 저가 766.33 · 거래대금 0.9조원</div>
       <div class="mini dim">전영업일 확정(KRX 20260716): 791.84 (-4.53%)</div>
     </div>
   <div class="card">
@@ -119,30 +131,30 @@
   </div>
 </div>
 
-<div class="sec">당일 투자자별 순매수 (억원) — 기준일 26.07.16</div>
+<div class="sec">당일 투자자별 순매수 (억원) — 기준일 26.07.20</div>
 <div class="grid g2">
   <div class="card">
     <div class="ttl">주요 주체</div>
     <table>
       <tr><th>주체</th><th>코스피</th><th>코스닥</th></tr>
       <tr><td class="lbl">개인</td>
-      <td class="up">+36,647</td>
-      <td class="up">+4,184</td></tr>
+      <td class="dn">-3,638</td>
+      <td class="up">+442</td></tr>
       <tr><td class="lbl">외국인</td>
-      <td class="dn">-13,665</td>
-      <td class="dn">-2,919</td></tr>
+      <td class="up">+3,278</td>
+      <td class="dn">-475</td></tr>
       <tr><td class="lbl">연기금등</td>
-      <td class="up">+592</td>
-      <td class="dn">-416</td></tr>
+      <td class="dn">-31</td>
+      <td class="dn">-15</td></tr>
       <tr><td class="lbl">투신(사모 포함)<span class="note">네이버 분류상 사모+투신 합산</span></td>
-      <td class="dn">-8,648</td>
-      <td class="up">+86</td></tr>
+      <td class="up">+821</td>
+      <td class="up">+101</td></tr>
       <tr><td class="lbl">금융투자</td>
-      <td class="dn">-15,258</td>
-      <td class="dn">-1,123</td></tr>
+      <td class="dn">-574</td>
+      <td class="dn">-37</td></tr>
       <tr><td class="lbl">기관계</td>
-      <td class="dn">-23,831</td>
-      <td class="dn">-1,553</td></tr>
+      <td class="up">+210</td>
+      <td class="up">+45</td></tr>
     </table>
   </div>
   <div class="card">
@@ -150,17 +162,17 @@
     <table>
       <tr><th>주체</th><th>코스피</th><th>코스닥</th></tr>
       <tr><td class="lbl">보험</td>
-      <td class="dn">-545</td>
-      <td class="dn">-72</td></tr>
+      <td class="up">+16</td>
+      <td class="dn">-1</td></tr>
       <tr><td class="lbl">은행</td>
-      <td class="up">+6</td>
-      <td class="dn">-2</td></tr>
+      <td class="up">+4</td>
+      <td class="dn">-1</td></tr>
       <tr><td class="lbl">기타금융</td>
-      <td class="up">+24</td>
-      <td class="dn">-26</td></tr>
+      <td class="dn">-25</td>
+      <td class="dn">-1</td></tr>
       <tr><td class="lbl">기타법인</td>
-      <td class="up">+849</td>
-      <td class="up">+287</td></tr>
+      <td class="up">+150</td>
+      <td class="dn">-12</td></tr>
     </table>
     <div class="mini">사모펀드 단독 수치는 KRX 정보데이터시스템 로그인 전용으로 전환되어 현재 무료 소스가 없습니다. 네이버(KOSCOM) 분류는 투신(사모) 합산 기준.</div>
   </div>
@@ -253,8 +265,355 @@
 </div>
 <div class="mini" style="margin-top:-6px">※ 요청하신 외국인·사모·연기금 3주체 기준 수급강도는 사모/연기금 상위종목 데이터가 잠금 상태라, 현재는 외국인+기관 합산으로 산출합니다. KRX 로그인 또는 키움 단말기 해제 시 3주체 기준으로 전환됩니다.</div>
 
+</div><!-- /tab-main -->
+<div id="tab-overheat" style="display:none">
+
+<div class="grid" style="grid-template-columns:1fr">
+  <div class="card">
+    <div class="ttl">하루 거래대금이 예탁금 대비 얼마나 컸나 (거래대금/예탁금 배율, 최근 91영업일)</div>
+    <div class="chstat">최신 07/16 잠정: <b>0.62x</b> (거래대금 67.8조 ÷ 예탁금 109.9조) — 중립</div>
+    <svg viewBox="0 0 1180 260" xmlns="http://www.w3.org/2000/svg">
+    <line x1="46" y1="234.0" x2="1166" y2="234.0" class="grid"/><line x1="46" y1="125.0" x2="1166" y2="125.0" class="grid"/><line x1="46" y1="16.0" x2="1166" y2="16.0" class="grid"/>
+    <line x1="46" y1="57.4" x2="1166" y2="57.4" stroke="#e2a03f" stroke-width="1" stroke-dasharray="5,4"/><text x="1162" y="53.4" class="axl" text-anchor="end" fill="#e2a03f">주의 0.9x</text><line x1="46" y1="37.0" x2="1166" y2="37.0" stroke="#f4516c" stroke-width="1" stroke-dasharray="5,4"/><text x="1162" y="33.0" class="axl" text-anchor="end" fill="#f4516c">과열 1.0x</text>
+    <polyline points="46.0,192.1 58.4,188.2 70.9,194.7 83.3,195.7 95.8,201.1 108.2,200.9 120.7,203.7 133.1,201.7 145.6,192.6 158.0,200.8 170.4,183.8 182.9,195.8 195.3,198.9 207.8,195.2 220.2,194.5 232.7,198.6 245.1,203.1 257.6,186.1 270.0,188.5 282.4,178.8 294.9,199.8 307.3,200.1 319.8,196.9 332.2,173.9 344.7,180.8 357.1,199.4 369.6,203.7 382.0,194.3 394.4,186.3 406.9,195.0 419.3,199.7 431.8,201.9 444.2,189.0 456.7,189.7 469.1,175.6 481.6,192.3 494.0,187.2 506.4,181.1 518.9,191.9 531.3,182.8 543.8,171.5 556.2,147.6 568.7,165.2 581.1,179.8 593.6,162.4 606.0,141.6 618.4,166.2 630.9,162.3 643.3,149.8 655.8,172.9 668.2,180.3 680.7,175.7 693.1,169.3 705.6,188.8 718.0,174.5 730.4,151.1 742.9,158.4 755.3,116.6 767.8,126.8 780.2,138.2 792.7,171.7 805.1,167.5 817.6,169.0 830.0,168.0 842.4,177.5 854.9,167.0 867.3,153.2 879.8,173.6 892.2,174.9 904.7,182.6 917.1,160.6 929.6,135.1 942.0,176.6 954.4,149.7 966.9,158.4 979.3,157.8 991.8,154.2 1004.2,175.6 1016.7,170.7 1029.1,173.3 1041.6,156.4 1054.0,162.8 1066.4,183.1 1078.9,167.3 1091.3,163.1 1103.8,166.0 1116.2,180.3 1128.7,166.2 1141.1,155.7 1153.6,177.3 1166.0,186.0" fill="none" stroke="#4f8ef7" stroke-width="1.2" opacity="0.55"/><polyline points="46.0,218.7 58.4,221.6 70.9,216.9 83.3,213.0 95.8,217.6 108.2,216.9 120.7,218.1 133.1,218.4 145.6,215.2 158.0,220.6 170.4,217.5 182.9,222.8 195.3,220.2 207.8,215.2 220.2,216.1 232.7,218.8 245.1,223.2 257.6,220.4 270.0,220.9 282.4,211.9 294.9,222.8 307.3,222.2 319.8,222.5 332.2,217.1 344.7,223.5 357.1,217.8 369.6,220.7 382.0,216.3 394.4,213.7 406.9,212.5 419.3,214.5 431.8,217.1 444.2,214.5 456.7,216.9 469.1,215.1 481.6,213.2 494.0,212.9 506.4,219.2 518.9,216.6 531.3,216.4 543.8,215.2 556.2,213.2 568.7,216.1 581.1,216.6 593.6,211.9 606.0,209.7 618.4,219.8 630.9,220.3 643.3,213.9 655.8,219.2 668.2,219.2 680.7,220.2 693.1,220.3 705.6,215.8 718.0,214.8 730.4,217.2 742.9,221.5 755.3,222.6 767.8,222.6 780.2,224.7 792.7,225.3 805.1,225.2 817.6,228.1 830.0,225.4 842.4,226.8 854.9,219.5 867.3,213.2 879.8,222.0 892.2,226.7 904.7,225.5 917.1,227.0 929.6,224.5 942.0,227.4 954.4,228.5 966.9,230.9 979.3,230.1 991.8,228.1 1004.2,228.9 1016.7,228.1 1029.1,221.4 1041.6,227.9 1054.0,229.6 1066.4,230.2 1078.9,229.9 1091.3,230.1 1103.8,230.2 1116.2,228.1 1128.7,227.5 1141.1,229.1 1153.6,229.6 1166.0,232.7" fill="none" stroke="#43b58e" stroke-width="1.2" opacity="0.55"/><polyline points="46.0,130.8 58.4,129.2 70.9,133.6 83.3,134.7 95.8,155.4 108.2,151.5 120.7,156.7 133.1,152.8 145.6,137.1 158.0,151.8 170.4,137.7 182.9,144.5 195.3,147.2 207.8,142.6 220.2,142.3 232.7,147.7 245.1,157.8 257.6,130.6 270.0,136.0 282.4,106.2 294.9,156.6 307.3,155.9 319.8,151.5 332.2,110.0 344.7,137.2 357.1,154.8 369.6,162.8 382.0,143.7 394.4,127.3 406.9,140.6 419.3,151.6 431.8,154.2 444.2,134.0 456.7,134.6 469.1,109.9 481.6,136.7 494.0,125.4 506.4,128.1 518.9,141.4 531.3,126.4 543.8,108.8 556.2,69.0 568.7,95.6 581.1,119.5 593.6,84.9 606.0,51.3 618.4,100.1 630.9,99.9 643.3,65.7 655.8,102.8 668.2,119.5 680.7,110.6 693.1,107.3 705.6,127.6 718.0,105.0 730.4,54.5 742.9,77.0 755.3,39.5 767.8,44.2 780.2,52.7 792.7,112.8 805.1,97.5 817.6,99.0 830.0,101.6 842.4,114.8 854.9,99.2 867.3,61.9 879.8,107.4 892.2,109.4 904.7,118.0 917.1,80.4 929.6,34.1 942.0,99.7 954.4,58.4 966.9,68.7 979.3,80.6 991.8,64.3 1004.2,109.5 1016.7,105.0 1029.1,99.1 1041.6,74.7 1054.0,75.7 1066.4,110.7 1078.9,89.5 1091.3,72.9 1103.8,87.3 1116.2,105.0 1128.7,84.9 1141.1,57.2 1153.6,101.8 1166.0,115.3" fill="none" stroke="#f4516c" stroke-width="2.2" opacity="1"/>
+    <circle cx="929.6" cy="34.1" r="3.5" fill="#f4516c"/><text x="40" y="237.5" class="axl" text-anchor="end">0.04</text><text x="40" y="128.5" class="axl" text-anchor="end">0.57</text><text x="40" y="19.5" class="axl" text-anchor="end">1.10</text>
+    <text x="46.0" y="252" class="axl" text-anchor="start">26.03.06</text><text x="606.0" y="252" class="axl" text-anchor="middle">26.05.12</text><text x="1166.0" y="252" class="axl" text-anchor="end">26.07.16</text>
+    <g font-size="10" fill="#8492ad"><text x="50" y="26">— 합산(코스피+코스닥+ETF)/예탁금</text><text x="236" y="26" fill="#4f8ef7">— 코스피/예탁금</text><text x="346" y="26" fill="#43b58e">— 코스닥/예탁금</text></g>
+  </svg>
+    <div class="mini">하루 거래대금은 그날 시장이 쓴 연료, 예탁금은 남은 연료통. 배율이 0.9x(주의)~1.0x(과열)에 가까워지면 단기 과열 점검 신호로 해석, 0.6x 이하는 냉각. 거래대금은 코스피+코스닥+ETF 합산(KRX 확정치), 예탁금 공표(금투협)가 2~3영업일 늦어 공표 이후 날짜는 최근 공표 예탁금으로 나눈 잠정치.</div>
+  </div>
+  <div class="card">
+    <div class="ttl">유동성 과열 데일리 표 (최근 30거래일, 단위 조원)</div>
+    <table class="rank">
+      <tr><th>일자</th><th>KOSPI</th><th>당일</th><th>코스피</th><th>코스닥</th><th>ETF</th><th>합계</th><th>예탁금</th><th>배율</th><th>판정</th></tr>
+      
+    <tr class="">
+      <td>06/05</td>
+      <td>8,161</td>
+      <td class="dn">-5.5%</td>
+      <td>48.5</td><td>10.7</td><td>35.3</td><td><b>94.5</b></td>
+      <td>134.2</td>
+      <td><b>0.70x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/08</td>
+      <td>7,484</td>
+      <td class="dn">-8.3%</td>
+      <td>48.3</td><td>8.9</td><td>37.7</td><td><b>95.0</b></td>
+      <td>136.4</td>
+      <td><b>0.70x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/09</td>
+      <td>8,097</td>
+      <td class="up">+8.2%</td>
+      <td>46.7</td><td>10.3</td><td>32.0</td><td><b>89.0</b></td>
+      <td>130.1</td>
+      <td><b>0.68x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/10</td>
+      <td>7,731</td>
+      <td class="dn">-4.5%</td>
+      <td>39.9</td><td>9.1</td><td>30.0</td><td><b>79.1</b></td>
+      <td>127.6</td>
+      <td><b>0.62x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/11</td>
+      <td>7,764</td>
+      <td class="up">+0.4%</td>
+      <td>46.4</td><td>13.7</td><td>28.5</td><td><b>88.6</b></td>
+      <td>127.4</td>
+      <td><b>0.70x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/12</td>
+      <td>8,124</td>
+      <td class="up">+4.6%</td>
+      <td>52.3</td><td>16.7</td><td>37.3</td><td><b>106.3</b></td>
+      <td>121.1</td>
+      <td><b>0.88x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/15</td>
+      <td>8,546</td>
+      <td class="up">+5.2%</td>
+      <td>40.0</td><td>11.5</td><td>27.5</td><td><b>79.0</b></td>
+      <td>120.6</td>
+      <td><b>0.66x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/16</td>
+      <td>8,727</td>
+      <td class="up">+2.1%</td>
+      <td>40.6</td><td>9.0</td><td>30.8</td><td><b>80.4</b></td>
+      <td>124.6</td>
+      <td><b>0.65x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/17</td>
+      <td>8,864</td>
+      <td class="up">+1.6%</td>
+      <td>35.8</td><td>9.7</td><td>29.6</td><td><b>75.2</b></td>
+      <td>124.6</td>
+      <td><b>0.60x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/18</td>
+      <td>9,064</td>
+      <td class="up">+2.3%</td>
+      <td>50.8</td><td>9.1</td><td>41.2</td><td><b>101.1</b></td>
+      <td>128.4</td>
+      <td><b>0.79x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="v-hot">
+      <td>06/19</td>
+      <td>9,052</td>
+      <td class="dn">-0.1%</td>
+      <td>67.3</td><td>10.7</td><td>53.2</td><td><b>131.2</b></td>
+      <td>129.4</td>
+      <td><b>1.01x</b></td>
+      <td>과열</td>
+    </tr>
+    <tr class="">
+      <td>06/22</td>
+      <td>9,115</td>
+      <td class="up">+0.7%</td>
+      <td>41.9</td><td>9.1</td><td>40.6</td><td><b>91.6</b></td>
+      <td>132.2</td>
+      <td><b>0.69x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/23</td>
+      <td>8,204</td>
+      <td class="dn">-10.0%</td>
+      <td>61.4</td><td>8.7</td><td>52.4</td><td><b>122.5</b></td>
+      <td>136.8</td>
+      <td><b>0.90x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/24</td>
+      <td>8,471</td>
+      <td class="up">+3.3%</td>
+      <td>55.5</td><td>7.0</td><td>52.8</td><td><b>115.4</b></td>
+      <td>136.6</td>
+      <td><b>0.84x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/25</td>
+      <td>8,930</td>
+      <td class="up">+5.4%</td>
+      <td>52.0</td><td>7.1</td><td>40.9</td><td><b>99.9</b></td>
+      <td>127.0</td>
+      <td><b>0.79x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/26</td>
+      <td>8,411</td>
+      <td class="dn">-5.8%</td>
+      <td>54.0</td><td>8.2</td><td>47.4</td><td><b>109.7</b></td>
+      <td>126.6</td>
+      <td><b>0.87x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/29</td>
+      <td>8,395</td>
+      <td class="dn">-0.2%</td>
+      <td>42.7</td><td>8.1</td><td>34.7</td><td><b>85.5</b></td>
+      <td>132.5</td>
+      <td><b>0.65x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>06/30</td>
+      <td>8,476</td>
+      <td class="up">+1.0%</td>
+      <td>42.1</td><td>8.0</td><td>31.1</td><td><b>81.2</b></td>
+      <td>121.6</td>
+      <td><b>0.67x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>07/01</td>
+      <td>8,303</td>
+      <td class="dn">-2.0%</td>
+      <td>40.0</td><td>11.8</td><td>31.8</td><td><b>83.6</b></td>
+      <td>120.1</td>
+      <td><b>0.70x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>07/02</td>
+      <td>7,648</td>
+      <td class="dn">-7.9%</td>
+      <td>49.9</td><td>8.0</td><td>39.9</td><td><b>97.8</b></td>
+      <td>119.9</td>
+      <td><b>0.82x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>07/03</td>
+      <td>8,088</td>
+      <td class="up">+5.8%</td>
+      <td>45.5</td><td>6.9</td><td>43.5</td><td><b>95.9</b></td>
+      <td>118.3</td>
+      <td><b>0.81x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>07/06</td>
+      <td>8,051</td>
+      <td class="dn">-0.5%</td>
+      <td>32.0</td><td>6.2</td><td>33.6</td><td><b>71.8</b></td>
+      <td>112.2</td>
+      <td><b>0.64x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>07/07</td>
+      <td>7,656</td>
+      <td class="dn">-4.9%</td>
+      <td>40.7</td><td>6.3</td><td>36.4</td><td><b>83.5</b></td>
+      <td>112.3</td>
+      <td><b>0.74x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>07/08</td>
+      <td>7,247</td>
+      <td class="dn">-5.3%</td>
+      <td>42.5</td><td>6.1</td><td>42.8</td><td><b>91.4</b></td>
+      <td>110.9</td>
+      <td><b>0.82x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>07/09</td>
+      <td>7,292</td>
+      <td class="up">+0.6%</td>
+      <td>39.6</td><td>5.9</td><td>35.3</td><td><b>80.8</b></td>
+      <td>107.1</td>
+      <td><b>0.75x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>07/10</td>
+      <td>7,476</td>
+      <td class="up">+2.5%</td>
+      <td>31.6</td><td>6.9</td><td>32.0</td><td><b>70.5</b></td>
+      <td>105.6</td>
+      <td><b>0.67x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="">
+      <td>07/13</td>
+      <td>6,807</td>
+      <td class="dn">-8.9%</td>
+      <td>40.1</td><td>7.4</td><td>35.9</td><td><b>83.5</b></td>
+      <td>109.0</td>
+      <td><b>0.77x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class="v-warn">
+      <td>07/14</td>
+      <td>6,857</td>
+      <td class="up">+0.7%</td>
+      <td>46.7</td><td>6.7</td><td>46.9</td><td><b>100.3</b></td>
+      <td>111.3</td>
+      <td><b>0.90x</b></td>
+      <td>주의</td>
+    </tr>
+    <tr class="">
+      <td>07/15</td>
+      <td>7,284</td>
+      <td class="up">+6.2%</td>
+      <td>34.5</td><td>6.4</td><td>34.2</td><td><b>75.1</b></td>
+      <td>109.9</td>
+      <td><b>0.68x</b></td>
+      <td>중립</td>
+    </tr>
+    <tr class=" prov">
+      <td>07/16 잠정</td>
+      <td>6,821</td>
+      <td class="dn">-6.4%</td>
+      <td>29.8</td><td>4.7</td><td>33.2</td><td><b>67.8</b></td>
+      <td>109.9</td>
+      <td><b>0.62x</b></td>
+      <td>중립</td>
+    </tr>
+    </table>
+  </div>
+  <div class="card">
+    <div class="ttl">배율 0.90x 이상 발생일 사후 성과 (최근 91영업일 창)</div>
+    <table class="rank">
+      <tr><th>일자</th><th>배율</th><th>거래대금</th><th>예탁금</th><th>KOSPI</th><th>10D</th><th>10D MDD</th><th>20D</th><th>20D MDD</th><th>60D</th><th>60D MDD</th></tr>
+      
+    <tr>
+      <td>2026-07-14</td>
+      <td><b>0.90x</b></td><td>100.3조</td><td>111.3조</td><td>6,857</td>
+      <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+    </tr>
+    <tr>
+      <td>2026-06-19</td>
+      <td><b>1.01x</b></td><td>131.2조</td><td>129.4조</td><td>9,052</td>
+      <td class="dn">-10.6%</td><td class="dn">-15.5%</td><td>-</td><td>-</td><td>-</td><td>-</td>
+    </tr>
+    <tr>
+      <td>2026-06-02</td>
+      <td><b>0.92x</b></td><td>126.3조</td><td>136.8조</td><td>8,801</td>
+      <td class="up">+0.7%</td><td class="dn">-15.0%</td><td class="dn">-5.7%</td><td class="dn">-15.0%</td><td>-</td><td>-</td>
+    </tr>
+    <tr>
+      <td>2026-06-01</td>
+      <td><b>0.96x</b></td><td>127.9조</td><td>132.6조</td><td>8,788</td>
+      <td class="dn">-0.7%</td><td class="dn">-14.8%</td><td class="dn">-3.5%</td><td class="dn">-14.8%</td><td>-</td><td>-</td>
+    </tr>
+    <tr>
+      <td>2026-05-29</td>
+      <td><b>0.99x</b></td><td>130.0조</td><td>131.6조</td><td>8,476</td>
+      <td class="up">+0.8%</td><td class="dn">-11.7%</td><td class="dn">-1.0%</td><td class="dn">-11.7%</td><td>-</td><td>-</td>
+    </tr>
+    <tr>
+      <td>2026-05-27</td>
+      <td><b>0.91x</b></td><td>117.5조</td><td>128.6조</td><td>8,229</td>
+      <td class="dn">-5.6%</td><td class="dn">-9.0%</td><td class="up">+8.5%</td><td class="dn">-9.0%</td><td>-</td><td>-</td>
+    </tr>
+    <tr>
+      <td>2026-05-12</td>
+      <td><b>0.93x</b></td><td>127.8조</td><td>137.4조</td><td>7,643</td>
+      <td class="up">+7.7%</td><td class="dn">-5.7%</td><td class="up">+1.6%</td><td class="dn">-5.7%</td><td>-</td><td>-</td>
+    </tr>
+    </table>
+    <div class="mini">수익률은 KOSPI 종가 기준 사후 N영업일, MDD는 해당 구간 내 최저점까지 낙폭. '-'는 아직 경과일 미충족. 데이터 창이 90영업일이라 과거 사례는 제한적.</div>
+  </div>
+</div>
+</div>
+<script>
+function showTab(id) {
+  for (const t of ['main', 'overheat']) {
+    document.getElementById('tab-' + t).style.display = t === id ? '' : 'none';
+    document.getElementById('btn-' + t).className = 'tabbtn' + (t === id ? ' active' : '');
+  }
+}
+</script>
 <div class="src">
-  소스: 지수 네이버 실시간(KOSCOM) + KRX 오픈API 확정치 · 예탁금/신용잔고 네이버 증시자금동향(금융투자협회 집계) · 투자자별 순매수 네이버 투자자별매매동향(KOSCOM) · 순매매 상위 네이버 외국인/기관 순매매 상위<br>
-  단위: 순매수 억원 · 예탁금/신용 조원 · 상위종목 금액 억원, 수량 천주 · 생성 스크립트: claude_work\sugup_agent\sugup_dashboard.js
+  소스: 지수 네이버 실시간(KOSCOM) + KRX 오픈API 확정치 · 예탁금/신용잔고 네이버 증시자금동향(금융투자협회 집계) · 투자자별 순매수 네이버 투자자별매매동향(KOSCOM) · 순매매 상위 네이버 외국인/기관 순매매 상위 · 과열지표 거래대금 네이버 일별시세<br>
+  단위: 순매수 억원 · 예탁금/신용/거래대금 조원 · 상위종목 금액 억원, 수량 천주 · 생성 스크립트: claude_work\sugup_agent\sugup_dashboard.js
 </div>
 </body></html>
