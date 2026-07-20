@@ -211,8 +211,9 @@ async function updateDailyCache(kospiHist) {
   };
   const upDn = (rows) => { let up = 0, dn = 0; for (const r of rows) { const f = num(r.FLUC_RT); if (f > 0) up++; else if (f < 0) dn++; } return [up, dn]; };
 
+  const sumTv = (rows) => rows.reduce((s, r) => s + (num(r.ACC_TRDVAL) || 0), 0); // 시장 거래대금 합(원)
   let d = new Date(), tradingSeen = 0, pcrDone = false, krxDead = false;
-  for (let scanned = 0; tradingSeen < 55 && scanned < 90 && !krxDead; scanned++) {
+  for (let scanned = 0; tradingSeen < 95 && scanned < 150 && !krxDead; scanned++) {
     const dd = ymd(d);
     const dow = d.getUTCDay();
     d = new Date(d.getTime() - 86400000);
@@ -220,17 +221,18 @@ async function updateDailyCache(kospiHist) {
     const e = cache[dd] || {};
     if (e.hol) continue;
     if (latestCandle && dd > latestCandle) continue; // 아직 개장 전/미발표 날짜
-    // 거래일 판별 겸 코스피 등락종목수
-    if (e.ksUp == null && !e.trading) {
+    // 거래일 판별 겸 코스피 등락종목수·거래대금(과열지표용)
+    if (e.ksUp == null || e.tvKs == null) {
       if (candleDates.size && !candleDates.has(dd)) { cache[dd] = { hol: true }; continue; } // 캔들 없음 = 휴장 확정
       const stk = await call('sto/stk_bydd_trd', dd);
       if (stk == null) { krxDead = true; break; } // KRX 접근 불가 → 기존 캐시로 진행
       if (!stk.length) continue; // 캔들은 있는데 KRX 미반영/일시 장애 → 마킹 없이 건너뛰고 다음 실행 때 재시도
-      [e.ksUp, e.ksDn] = upDn(stk); e.trading = true;
+      [e.ksUp, e.ksDn] = upDn(stk); e.tvKs = sumTv(stk); e.trading = true;
     }
     tradingSeen++;
-    if (tradingSeen <= 25 && e.kqUp == null) { const ksq = await call('sto/ksq_bydd_trd', dd); if (ksq && ksq.length) [e.kqUp, e.kqDn] = upDn(ksq); }
-    if (e.vkospi == null) { const drv = await call('idx/drvprod_dd_trd', dd); const vk = (drv || []).find(r => r.IDX_NM === '코스피 200 변동성지수'); if (vk) e.vkospi = num(vk.CLSPRC_IDX); }
+    if (e.kqUp == null || e.tvKq == null) { const ksq = await call('sto/ksq_bydd_trd', dd); if (ksq && ksq.length) { [e.kqUp, e.kqDn] = upDn(ksq); e.tvKq = sumTv(ksq); } }
+    if (e.tvEtf == null) { const etf = await call('etp/etf_bydd_trd', dd); if (etf && etf.length) e.tvEtf = sumTv(etf); }
+    if (tradingSeen <= 55 && e.vkospi == null) { const drv = await call('idx/drvprod_dd_trd', dd); const vk = (drv || []).find(r => r.IDX_NM === '코스피 200 변동성지수'); if (vk) e.vkospi = num(vk.CLSPRC_IDX); }
     if (tradingSeen <= 25 && e.bond == null) { const bd = await call('idx/bon_dd_trd', dd); const kb = (bd || []).find(r => (r.BND_IDX_GRP_NM || '') === 'KRX 채권지수'); if (kb) e.bond = num(kb.TOT_EARNG_IDX); }
     if (!pcrDone && e.pcr == null) { // 풋콜비율은 최신 거래일 것만 사용
       const opt = await call('drv/opt_bydd_trd', dd);
@@ -339,6 +341,76 @@ function svgChart(series, { width = 560, height = 190, unitDiv = 10000, unitLabe
   </svg>`;
 }
 
+// ---------- 7) 과열지표: (코스피+코스닥+ETF 거래대금) ÷ 투자자예탁금 ----------
+// 거래대금은 KRX 오픈API 일별 합산(sugup_cache의 tvKs/tvKq/tvEtf) — 참고 이미지의 '총 거래대금' 스케일과 일치
+function buildOverheat(cache, dep, kospiHist) {
+  const depList = dep.map(r => ({ date: '20' + r.date.replace(/\./g, ''), v: r.deposit / 10000 })).sort((a, b) => b.date.localeCompare(a.date));
+  if (!depList.length) return null;
+  const latestDep = depList[0].date;
+  const depAsOf = (d) => { for (const r of depList) if (r.date <= d) return r.v; return null; };
+  const closeMap = Object.fromEntries(kospiHist.map(h => [h.date, h.close]));
+  const tds = Object.keys(cache).filter(d => cache[d].trading && cache[d].tvKs != null && cache[d].tvKq != null).sort((a, b) => b.localeCompare(a));
+  const rows = [];
+  for (const dd of tds) { // 최신순
+    const e = cache[dd];
+    const depV = depAsOf(dd);
+    if (depV == null) continue;
+    const ksTr = e.tvKs / 1e12, kqTr = e.tvKq / 1e12, etfTr = (e.tvEtf || 0) / 1e12; // 조원
+    const total = ksTr + kqTr + etfTr;
+    const ratio = total / depV;
+    rows.push({
+      date: dd, close: closeMap[dd] || null, ksTr, kqTr, etfTr, total, dep: depV, ratio,
+      ratioKs: ksTr / depV, ratioKq: kqTr / depV,
+      prov: dd > latestDep, // 예탁금 최신 공표일 이후 → 잠정(최근 공표 예탁금으로 나눔)
+      verdict: ratio >= 1.0 ? '과열' : ratio >= 0.9 ? '주의' : ratio <= 0.6 ? '냉각' : '중립',
+    });
+  }
+  if (!rows.length) return null;
+  // 등락률(전일비)
+  for (let i = 0; i < rows.length - 1; i++) if (rows[i].close && rows[i + 1].close) rows[i].rate = (rows[i].close / rows[i + 1].close - 1) * 100;
+  // 0.90x 이상 이벤트 사후 성과 (10/20/60일 수익률·MDD) — 가용 90영업일 창 안에서
+  const asc = [...rows].reverse();
+  const events = [];
+  asc.forEach((r, i) => {
+    if (r.ratio < 0.9 || !r.close) return;
+    const ev = { ...r };
+    for (const n of [10, 20, 60]) {
+      const fwd = asc.slice(i + 1, i + n + 1).map(x => x.close).filter(Boolean);
+      if (i + n < asc.length && asc[i + n].close && fwd.length === n) {
+        ev['r' + n] = (asc[i + n].close / r.close - 1) * 100;
+        ev['mdd' + n] = (Math.min(...fwd) / r.close - 1) * 100;
+      } else { ev['r' + n] = null; ev['mdd' + n] = null; }
+    }
+    events.push(ev);
+  });
+  events.reverse(); // 최신 먼저
+  return { rows, asc, events, latestDep };
+}
+
+// 과열지표 차트: 합산 배율(굵은 선) + 코스피/코스닥 배율(얇은 선) + 0.9/1.0 기준선
+function svgRatioChart(asc) {
+  const W = 1180, H = 260, pad = { l: 46, r: 14, t: 16, b: 26 };
+  const IW = W - pad.l - pad.r, IH = H - pad.t - pad.b;
+  const vals = asc.map(r => r.ratio);
+  const mx = Math.max(1.05, ...vals) * 1.05, mn = Math.max(0, Math.min(...asc.map(r => r.ratioKq)) * 0.85);
+  const x = (i) => pad.l + i / (asc.length - 1) * IW;
+  const y = (v) => pad.t + IH - (v - mn) / (mx - mn) * IH;
+  const line = (get, color, w2, op) => `<polyline points="${asc.map((r, i) => x(i).toFixed(1) + ',' + y(get(r)).toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="${w2}" opacity="${op}"/>`;
+  const thr = (v, color, lab) => v < mx ? `<line x1="${pad.l}" y1="${y(v).toFixed(1)}" x2="${pad.l + IW}" y2="${y(v).toFixed(1)}" stroke="${color}" stroke-width="1" stroke-dasharray="5,4"/><text x="${pad.l + IW - 4}" y="${(y(v) - 4).toFixed(1)}" class="axl" text-anchor="end" fill="${color}">${lab}</text>` : '';
+  const dots = asc.map((r, i) => r.ratio >= 1.0 ? `<circle cx="${x(i).toFixed(1)}" cy="${y(r.ratio).toFixed(1)}" r="3.5" fill="#f4516c"/>` : '').join('');
+  const xi = [0, Math.floor(asc.length / 2), asc.length - 1];
+  const fmtD = (d) => d.slice(2, 4) + '.' + d.slice(4, 6) + '.' + d.slice(6, 8);
+  const yls = [mn, (mn + mx) / 2, mx].map(v => `<text x="${pad.l - 6}" y="${(y(v) + 3.5).toFixed(1)}" class="axl" text-anchor="end">${fmt(v, 2)}</text>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    ${[mn, (mn + mx) / 2, mx].map(v => `<line x1="${pad.l}" y1="${y(v).toFixed(1)}" x2="${pad.l + IW}" y2="${y(v).toFixed(1)}" class="grid"/>`).join('')}
+    ${thr(0.9, '#e2a03f', '주의 0.9x')}${thr(1.0, '#f4516c', '과열 1.0x')}
+    ${line(r => r.ratioKs, '#4f8ef7', 1.2, 0.55)}${line(r => r.ratioKq, '#43b58e', 1.2, 0.55)}${line(r => r.ratio, '#f4516c', 2.2, 1)}
+    ${dots}${yls}
+    ${xi.map(i => `<text x="${x(i).toFixed(1)}" y="${H - 8}" class="axl" text-anchor="${i === 0 ? 'start' : i === asc.length - 1 ? 'end' : 'middle'}">${fmtD(asc[i].date)}</text>`).join('')}
+    <g font-size="10" fill="#8492ad"><text x="${pad.l + 4}" y="${pad.t + 10}">— 합산(코스피+코스닥+ETF)/예탁금</text><text x="${pad.l + 190}" y="${pad.t + 10}" fill="#4f8ef7">— 코스피/예탁금</text><text x="${pad.l + 300}" y="${pad.t + 10}" fill="#43b58e">— 코스닥/예탁금</text></g>
+  </svg>`;
+}
+
 // Fear&Greed 반원 게이지 SVG (0=극단공포 좌측, 100=극단탐욕 우측)
 function svgGauge(score, label) {
   const W = 260, H = 150, cx = 130, cy = 130, R = 100, r = 74;
@@ -363,8 +435,58 @@ function svgGauge(score, label) {
 }
 
 // ---------- HTML 렌더링 ----------
+// [과열지표] 탭 본문
+function renderOverheat(oh) {
+  if (!oh) return '<div class="card"><div class="ttl">과열지표</div><div class="lockbody">거래대금/예탁금 데이터 수집 실패 — 다음 갱신 때 재시도됩니다.</div></div>';
+  const fmtD = (d) => d.slice(4, 6) + '/' + d.slice(6, 8);
+  const latest = oh.rows[0];
+  const vClass = { '과열': 'v-hot', '주의': 'v-warn', '냉각': 'v-cool', '중립': '' };
+  const dailyRows = oh.rows.slice(0, 30).reverse(); // 오래→최신, 최근 30거래일
+  const daily = dailyRows.map(r => `
+    <tr class="${vClass[r.verdict]}${r.prov ? ' prov' : ''}">
+      <td>${fmtD(r.date)}${r.prov ? ' 잠정' : ''}</td>
+      <td>${fmt(r.close, 0)}</td>
+      <td class="${signCls(r.rate)}">${r.rate != null ? signTxt(r.rate, 1) + '%' : '-'}</td>
+      <td>${fmt(r.ksTr, 1)}</td><td>${fmt(r.kqTr, 1)}</td><td>${fmt(r.etfTr, 1)}</td><td><b>${fmt(r.total, 1)}</b></td>
+      <td>${fmt(r.dep, 1)}</td>
+      <td><b>${fmt(r.ratio, 2)}x</b></td>
+      <td>${r.verdict}</td>
+    </tr>`).join('');
+  const evCell = (v) => v == null ? '<td>-</td>' : `<td class="${signCls(v)}">${signTxt(v, 1)}%</td>`;
+  const events = oh.events.map(r => `
+    <tr>
+      <td>${r.date.slice(0, 4)}-${r.date.slice(4, 6)}-${r.date.slice(6, 8)}</td>
+      <td><b>${fmt(r.ratio, 2)}x</b></td><td>${fmt(r.total, 1)}조</td><td>${fmt(r.dep, 1)}조</td><td>${fmt(r.close, 0)}</td>
+      ${evCell(r.r10)}${evCell(r.mdd10)}${evCell(r.r20)}${evCell(r.mdd20)}${evCell(r.r60)}${evCell(r.mdd60)}
+    </tr>`).join('');
+  return `
+<div class="grid" style="grid-template-columns:1fr">
+  <div class="card">
+    <div class="ttl">하루 거래대금이 예탁금 대비 얼마나 컸나 (거래대금/예탁금 배율, 최근 ${oh.asc.length}영업일)</div>
+    <div class="chstat">최신 ${fmtD(latest.date)}${latest.prov ? ' 잠정' : ''}: <b>${fmt(latest.ratio, 2)}x</b> (거래대금 ${fmt(latest.total, 1)}조 ÷ 예탁금 ${fmt(latest.dep, 1)}조) — ${latest.verdict}</div>
+    ${svgRatioChart(oh.asc)}
+    <div class="mini">하루 거래대금은 그날 시장이 쓴 연료, 예탁금은 남은 연료통. 배율이 0.9x(주의)~1.0x(과열)에 가까워지면 단기 과열 점검 신호로 해석, 0.6x 이하는 냉각. 거래대금은 코스피+코스닥+ETF 합산(KRX 확정치), 예탁금 공표(금투협)가 2~3영업일 늦어 공표 이후 날짜는 최근 공표 예탁금으로 나눈 잠정치.</div>
+  </div>
+  <div class="card">
+    <div class="ttl">유동성 과열 데일리 표 (최근 30거래일, 단위 조원)</div>
+    <table class="rank">
+      <tr><th>일자</th><th>KOSPI</th><th>당일</th><th>코스피</th><th>코스닥</th><th>ETF</th><th>합계</th><th>예탁금</th><th>배율</th><th>판정</th></tr>
+      ${daily}
+    </table>
+  </div>
+  <div class="card">
+    <div class="ttl">배율 0.90x 이상 발생일 사후 성과 (최근 ${oh.asc.length}영업일 창)</div>
+    ${oh.events.length ? `<table class="rank">
+      <tr><th>일자</th><th>배율</th><th>거래대금</th><th>예탁금</th><th>KOSPI</th><th>10D</th><th>10D MDD</th><th>20D</th><th>20D MDD</th><th>60D</th><th>60D MDD</th></tr>
+      ${events}
+    </table>` : '<div class="lockbody">최근 창 안에 0.90x 이상 발생일이 없습니다.</div>'}
+    <div class="mini">수익률은 KOSPI 종가 기준 사후 N영업일, MDD는 해당 구간 내 최저점까지 낙폭. '-'는 아직 경과일 미충족. 데이터 창이 90영업일이라 과거 사례는 제한적.</div>
+  </div>
+</div>`;
+}
+
 function render(data) {
-  const { rt, krx, dep, invK, invQ, ranks, trdvalMap, cache, fg, now } = data;
+  const { rt, krx, dep, invK, invQ, ranks, trdvalMap, cache, fg, oh, now } = data;
   const kospi = rt.KOSPI, kosdaq = rt.KOSDAQ;
   const stateTxt = kospi.state === 'OPEN' ? '장중' : '장마감';
   const invKr = invK[0], invQr = invQ[0];
@@ -476,9 +598,21 @@ function render(data) {
   .lockbody { font-size:12px; color:var(--dim); line-height:1.8; }
   .sec { font-size:14px; font-weight:bold; margin:22px 0 10px; color:#aebfdd; }
   .src { color:var(--dim); font-size:11px; line-height:1.8; margin-top:20px; border-top:1px solid var(--line); padding-top:12px; }
+  .tabbar { display:flex; gap:8px; margin-bottom:16px; }
+  .tabbtn { background:var(--card); border:1px solid var(--line); color:var(--dim); padding:8px 18px; border-radius:9px; font-size:13px; font-weight:bold; cursor:pointer; font-family:inherit; }
+  .tabbtn.active { background:#233150; color:#cfe0ff; border-color:#3a4d78; }
+  .v-hot td { background:rgba(244,81,108,0.12); }
+  .v-warn td { background:rgba(226,160,63,0.10); }
+  .v-cool td { background:rgba(61,139,253,0.08); }
+  .prov td { border-top:1px solid #4f8ef7; border-bottom:1px solid #4f8ef7; }
 </style></head><body>
 <h1>국내 증시 수급 대시보드</h1>
 <div class="meta">갱신: ${now} · 지수 ${stateTxt} 기준 · 투자자별 순매수 기준일 ${invKr ? invKr.date : '-'} · 예탁금/신용 최신일 ${d0 ? d0.date : '-'}</div>
+<div class="tabbar">
+  <button class="tabbtn active" id="btn-main" onclick="showTab('main')">수급 현황</button>
+  <button class="tabbtn" id="btn-overheat" onclick="showTab('overheat')">과열지표</button>
+</div>
+<div id="tab-main">
 
 <div class="grid g4">
   ${idxCard('코스피', kospi, krx && krx.kospi)}
@@ -619,9 +753,21 @@ ${(() => {
 </div>
 <div class="mini" style="margin-top:-6px">※ 요청하신 외국인·사모·연기금 3주체 기준 수급강도는 사모/연기금 상위종목 데이터가 잠금 상태라, 현재는 외국인+기관 합산으로 산출합니다. KRX 로그인 또는 키움 단말기 해제 시 3주체 기준으로 전환됩니다.</div>
 
+</div><!-- /tab-main -->
+<div id="tab-overheat" style="display:none">
+${renderOverheat(oh)}
+</div>
+<script>
+function showTab(id) {
+  for (const t of ['main', 'overheat']) {
+    document.getElementById('tab-' + t).style.display = t === id ? '' : 'none';
+    document.getElementById('btn-' + t).className = 'tabbtn' + (t === id ? ' active' : '');
+  }
+}
+</script>
 <div class="src">
-  소스: 지수 네이버 실시간(KOSCOM) + KRX 오픈API 확정치 · 예탁금/신용잔고 네이버 증시자금동향(금융투자협회 집계) · 투자자별 순매수 네이버 투자자별매매동향(KOSCOM) · 순매매 상위 네이버 외국인/기관 순매매 상위<br>
-  단위: 순매수 억원 · 예탁금/신용 조원 · 상위종목 금액 억원, 수량 천주 · 생성 스크립트: claude_work\\sugup_agent\\sugup_dashboard.js
+  소스: 지수 네이버 실시간(KOSCOM) + KRX 오픈API 확정치 · 예탁금/신용잔고 네이버 증시자금동향(금융투자협회 집계) · 투자자별 순매수 네이버 투자자별매매동향(KOSCOM) · 순매매 상위 네이버 외국인/기관 순매매 상위 · 과열지표 거래대금 네이버 일별시세<br>
+  단위: 순매수 억원 · 예탁금/신용/거래대금 조원 · 상위종목 금액 억원, 수량 천주 · 생성 스크립트: claude_work\\sugup_agent\\sugup_dashboard.js
 </div>
 </body></html>`;
 }
@@ -629,14 +775,14 @@ ${(() => {
 // ---------- 메인 ----------
 (async () => {
   const t0 = Date.now();
-  console.log('[1/7] 지수(실시간/확정) 수집...');
+  console.log('[1/8] 지수(실시간/확정) 수집...');
   const [rt, krx] = await Promise.all([fetchRealtimeIndex(), fetchKrxOfficialIndex()]);
-  console.log('[2/7] 예탁금/신용잔고 90영업일 수집...');
+  console.log('[2/8] 예탁금/신용잔고 90영업일 수집...');
   const dep = await fetchDepositCredit(90);
   console.log(`      ${dep.length}일 (${dep[dep.length - 1]?.date} ~ ${dep[0]?.date})`);
-  console.log('[3/7] 투자자별 순매수 수집...');
+  console.log('[3/8] 투자자별 순매수 수집...');
   const [invK, invQ] = await Promise.all([fetchInvestorTrend('01'), fetchInvestorTrend('02')]);
-  console.log('[4/7] 외국인/기관 순매매 상위 수집...');
+  console.log('[4/8] 외국인/기관 순매매 상위 수집...');
   const [f01b, f01s, f02b, f02s, i01b, i01s, i02b, i02s] = await Promise.all([
     fetchDealRank('01', '9000', 'buy'), fetchDealRank('01', '9000', 'sell'),
     fetchDealRank('02', '9000', 'buy'), fetchDealRank('02', '9000', 'sell'),
@@ -645,7 +791,7 @@ ${(() => {
   ]);
   const rankDateRaw = f01b.date || i01b.date; // '26.07.13' → '20260713'
   const basDd = rankDateRaw ? '20' + rankDateRaw.replace(/\./g, '') : null;
-  console.log(`[5/7] KRX 종목별 거래대금 수집 (기준일 ${basDd})...`);
+  console.log(`[5/8] KRX 종목별 거래대금 수집 (기준일 ${basDd})...`);
   const trdvalMap = basDd ? await fetchKrxTradeValueMap(basDd) : {};
   console.log(`      KRX ${Object.keys(trdvalMap).length}종목`);
   // KRX가 막힌 환경(GitHub Actions 등 해외IP)이면 네이버 일별시세로 근사 폴백
@@ -656,14 +802,17 @@ ${(() => {
     Object.assign(trdvalMap, approx);
     console.log(`      네이버 근사 폴백 ${Object.keys(approx).length}/${missing.length}종목`);
   }
-  console.log('[6/7] 시장 심리 지표 (VKOSPI·F&G·ADR) 캐시 갱신...');
+  console.log('[6/8] 시장 심리 지표 (VKOSPI·F&G·ADR) 캐시 갱신...');
   const kospiHist = await fetchKospiHistory(); // 거래일 교차검증용으로 캐시 갱신보다 먼저
   const cache = await updateDailyCache(kospiHist);
   const fg = computeFearGreed(cache, kospiHist);
   console.log(`      거래일 캐시 ${Object.keys(cache).filter(d => cache[d].trading).length}일, F&G ${fg ? fg.score + ' (' + fg.label + ', 요소 ' + fg.comps.length + '개)' : '산출 불가'}`);
-  console.log('[7/7] HTML 생성...');
+  console.log('[7/8] 과열지표 조립 (거래대금/예탁금)...');
+  const oh = buildOverheat(cache, dep, kospiHist);
+  console.log(`      ${oh ? oh.rows.length + '일, 최신 ' + oh.rows[0].date + ' ' + oh.rows[0].ratio.toFixed(2) + 'x (' + oh.rows[0].verdict + (oh.rows[0].prov ? ', 잠정' : '') + ')' : '조립 실패'}`);
+  console.log('[8/8] HTML 생성...');
   const now = new Date(Date.now() + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 16) + ' KST';
-  const html = render({ rt, krx, dep, invK, invQ, ranks: { f01b, f01s, f02b, f02s, i01b, i01s, i02b, i02s }, trdvalMap, cache, fg, now });
+  const html = render({ rt, krx, dep, invK, invQ, ranks: { f01b, f01s, f02b, f02s, i01b, i01s, i02b, i02s }, trdvalMap, cache, fg, oh, now });
   let out;
   if (OUTFILE) { // 클라우드(GitHub Actions) 모드: 단일 파일만 출력
     out = OUTFILE;
