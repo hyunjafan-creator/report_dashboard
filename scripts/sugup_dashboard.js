@@ -110,25 +110,59 @@ async function fetchDepositCredit(days = 90) {
   return rows.slice(0, days); // 최신순
 }
 
-// ---------- 4) 투자자별 순매수 (당일/최근영업일) ----------
-async function fetchInvestorTrend(sosok) { // '01' KOSPI, '02' KOSDAQ
+// ---------- 4) 투자자별 순매수 (일별, 페이지당 10행) ----------
+async function fetchInvestorTrend(sosok, days = 90) { // '01' KOSPI, '02' KOSDAQ
   const bizdate = ymd(new Date());
-  const t = await getText(`https://finance.naver.com/sise/investorDealTrendDay.naver?bizdate=${bizdate}&sosok=${sosok}`, true);
-  const trs = t.split(/<tr/).slice(1);
-  const out = [];
-  for (const tr of trs) {
-    const dm = tr.match(/class="date2?"[^>]*>([\d.]+)</);
-    if (!dm) continue;
-    const nums = [...tr.matchAll(/<td[^>]*>\s*(-?[\d,]+)\s*<\/td>/g)].map(m => num(m[1]));
-    if (nums.length >= 10) {
-      // 순서: 개인 외국인 기관계 금융투자 보험 투신(사모) 은행 기타금융 연기금등 기타법인
-      out.push({
-        date: dm[1], 개인: nums[0], 외국인: nums[1], 기관계: nums[2], 금융투자: nums[3],
-        보험: nums[4], 투신사모: nums[5], 은행: nums[6], 기타금융: nums[7], 연기금등: nums[8], 기타법인: nums[9],
-      });
+  const out = []; const seen = new Set();
+  for (let page = 1; page <= Math.ceil(days / 10) + 2 && out.length < days; page++) {
+    const t = await getText(`https://finance.naver.com/sise/investorDealTrendDay.naver?bizdate=${bizdate}&sosok=${sosok}&page=${page}`, true);
+    for (const tr of t.split(/<tr/).slice(1)) {
+      const dm = tr.match(/class="date2?"[^>]*>([\d.]+)</);
+      if (!dm || seen.has(dm[1])) continue;
+      const nums = [...tr.matchAll(/<td[^>]*>\s*(-?[\d,]+)\s*<\/td>/g)].map(m => num(m[1]));
+      if (nums.length >= 10) {
+        seen.add(dm[1]);
+        // 순서: 개인 외국인 기관계 금융투자 보험 투신(사모) 은행 기타금융 연기금등 기타법인
+        out.push({
+          date: dm[1], 개인: nums[0], 외국인: nums[1], 기관계: nums[2], 금융투자: nums[3],
+          보험: nums[4], 투신사모: nums[5], 은행: nums[6], 기타금융: nums[7], 연기금등: nums[8], 기타법인: nums[9],
+        });
+      }
     }
   }
-  return out; // 최신순, [0]이 최근 영업일
+  return out.slice(0, days); // 최신순, [0]이 최근 영업일
+}
+
+// 일별 순매수 막대 + 누적 순매수 라인 차트 (억원)
+function svgBarChart(asc /* 과거→최신 [{date, v}] */, { width = 560, height = 200 } = {}) {
+  const pad = { l: 52, r: 56, t: 14, b: 24 };
+  const IW = width - pad.l - pad.r, IH = height - pad.t - pad.b;
+  const vals = asc.map(r => r.v);
+  const mx = Math.max(...vals, 0), mn = Math.min(...vals, 0);
+  const rng = (mx - mn) || 1;
+  const x = (i) => pad.l + (i + 0.5) / asc.length * IW;
+  const y = (v) => pad.t + IH - (v - mn) / rng * IH;
+  const zero = y(0);
+  const bw = Math.max(1.2, IW / asc.length * 0.65);
+  const bars = asc.map((r, i) => {
+    const yv = y(r.v);
+    return `<rect x="${(x(i) - bw / 2).toFixed(1)}" y="${Math.min(yv, zero).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.8, Math.abs(yv - zero)).toFixed(1)}" fill="${r.v >= 0 ? '#f4516c' : '#3d8bfd'}"/>`;
+  }).join('');
+  // 누적선 (우측 독립 스케일)
+  let s = 0; const cum = asc.map(r => (s += r.v));
+  const cmx = Math.max(...cum, 0), cmn = Math.min(...cum, 0), crng = (cmx - cmn) || 1;
+  const y2 = (v) => pad.t + IH - (v - cmn) / crng * IH;
+  const cumLine = `<polyline points="${cum.map((v, i) => x(i).toFixed(1) + ',' + y2(v).toFixed(1)).join(' ')}" fill="none" stroke="#e2c04f" stroke-width="1.8" opacity="0.9"/>`;
+  const xi = [0, Math.floor(asc.length / 2), asc.length - 1];
+  const last = cum[cum.length - 1];
+  return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+    <line x1="${pad.l}" y1="${zero.toFixed(1)}" x2="${pad.l + IW}" y2="${zero.toFixed(1)}" class="grid"/>
+    ${bars}${cumLine}
+    <text x="${pad.l - 6}" y="${(y(mx) + 4).toFixed(1)}" class="axl" text-anchor="end">${fmt(mx / 10000, 1)}조</text>
+    <text x="${pad.l - 6}" y="${(y(mn) + 4).toFixed(1)}" class="axl" text-anchor="end">${fmt(mn / 10000, 1)}조</text>
+    <text x="${pad.l + IW + 4}" y="${(y2(last) + 4).toFixed(1)}" class="axl" fill="#e2c04f">누적 ${fmt(last / 10000, 1)}조</text>
+    ${xi.map(i => `<text x="${x(i).toFixed(1)}" y="${height - 6}" class="axl" text-anchor="${i === 0 ? 'start' : i === asc.length - 1 ? 'end' : 'middle'}">${asc[i].date}</text>`).join('')}
+  </svg>`;
 }
 
 // ---------- 5) 외국인/기관 순매매 상위 ----------
@@ -710,6 +744,27 @@ ${(() => {
   </div>
 </div>
 
+${(() => {
+  const mk = (rows, label) => {
+    if (!rows || rows.length < 10) return `<div class="card"><div class="ttl">${label}</div><div class="lockbody">데이터 부족</div></div>`;
+    const asc = rows.slice().reverse().map(r => ({ date: r.date, v: r.외국인 }));
+    const total = asc.reduce((s, r) => s + r.v, 0);
+    const buyDays = asc.filter(r => r.v > 0).length;
+    const l = asc[asc.length - 1];
+    return `<div class="card">
+      <div class="ttl">${label} <span class="tag">${rows[rows.length - 1].date} ~ ${rows[0].date}</span></div>
+      <div class="chstat">최근일(${l.date}) <b class="${signCls(l.v)}">${signTxt(l.v)}억</b> · ${asc.length}일 누적 <b class="${signCls(total)}">${signTxt(total / 10000, 2)}조</b> · 순매수 ${buyDays}일 / 순매도 ${asc.length - buyDays}일</div>
+      ${svgBarChart(asc)}
+    </div>`;
+  };
+  return `
+<div class="sec">외국인 일별 순매수 추이 — 최근 ${invK.length}영업일 (막대: 일별 순매수 억원, 노란선: 누적)</div>
+<div class="grid g2">
+  ${mk(invK, '코스피 · 외국인 순매수')}
+  ${mk(invQ, '코스닥 · 외국인 순매수')}
+</div>`;
+})()}
+
 <div class="sec">시장 유동성 — 최근 90영업일</div>
 <div class="grid g3">
   <div class="card">
@@ -780,8 +835,9 @@ function showTab(id) {
   console.log('[2/8] 예탁금/신용잔고 90영업일 수집...');
   const dep = await fetchDepositCredit(90);
   console.log(`      ${dep.length}일 (${dep[dep.length - 1]?.date} ~ ${dep[0]?.date})`);
-  console.log('[3/8] 투자자별 순매수 수집...');
-  const [invK, invQ] = await Promise.all([fetchInvestorTrend('01'), fetchInvestorTrend('02')]);
+  console.log('[3/8] 투자자별 순매수 수집 (90영업일)...');
+  const [invK, invQ] = await Promise.all([fetchInvestorTrend('01', 90), fetchInvestorTrend('02', 90)]);
+  console.log(`      코스피 ${invK.length}일 · 코스닥 ${invQ.length}일`);
   console.log('[4/8] 외국인/기관 순매매 상위 수집...');
   const [f01b, f01s, f02b, f02s, i01b, i01s, i02b, i02s] = await Promise.all([
     fetchDealRank('01', '9000', 'buy'), fetchDealRank('01', '9000', 'sell'),
