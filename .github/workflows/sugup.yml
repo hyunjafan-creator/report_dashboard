@@ -2,7 +2,9 @@ name: Update Sugup Dashboard
 
 on:
   schedule:
-    - cron: '0 23 * * 0-4'   # 평일 08:00 KST (UTC 일~목 23:00) — 전일 마감 데이터 기준 아침 브리핑용
+    - cron: '0 23 * * 0-4'    # 평일 08:00 KST — 전일 확정 데이터 기준 아침 브리핑
+    - cron: '0 10 * * 1-5'    # 평일 19:00 KST — 당일 마감 후 1차 (투자자별·지수 확정 반영)
+    - cron: '0 13 * * 1-5'    # 평일 22:00 KST — 당일 마감 후 2차 (순매매상위·KRX 늦은 발행분 반영)
   workflow_dispatch:        # 수동 실행 버튼
 
 permissions:
