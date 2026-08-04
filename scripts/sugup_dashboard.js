@@ -82,7 +82,40 @@ async function fetchKrxOfficialIndex() {
   return null;
 }
 
-// ---------- 3) 예탁금·신용잔고 (90영업일) ----------
+// ---------- 2.5) 금융투자협회 FreeSIS 공식 통계 (2026-08-04 신규 연동) ----------
+// 리뉴얼된 FreeSIS의 실제 데이터 엔드포인트: POST /meta/getMetaDataList.do, {dmSearch:{...,OBJ_NM}}
+//   무인증·무세션. tmpV1=D(일간), tmpV40=1000000(백만원 단위), tmpV41=1, tmpV45~46=기간
+//   STATSCU0100000070BO 신용공여잔고: TMPV1날짜 TMPV2융자합 TMPV3융자유가 TMPV4융자코스닥 TMPV5~7대주 TMPV9예탁담보융자
+//   STATSCU0100000060BO 증시자금추이: TMPV1날짜 TMPV2예탁금 TMPV3파생예수금 TMPV4=RP TMPV5위탁매매미수금 TMPV6반대매매금액 TMPV7미수금대비비중%
+async function fetchKofia(days = 90) {
+  const call = async (objNm) => {
+    const now = Date.now() + 9 * 3600000; // KST
+    const body = { dmSearch: {
+      tmpV1: 'D', tmpV40: '1000000', tmpV41: '1',
+      tmpV45: ymd(new Date(now - 200 * 86400000)), tmpV46: ymd(new Date(now)),
+      OBJ_NM: objNm,
+    } };
+    const r = await fetch('https://freesis.kofia.or.kr/meta/getMetaDataList.do', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'User-Agent': UA, 'Referer': 'https://freesis.kofia.or.kr/stat/FreeSIS.do' },
+      body: JSON.stringify(body),
+    });
+    const t = await r.text();
+    if (!t.trim().startsWith('{')) throw new Error('FreeSIS 비JSON 응답');
+    return (JSON.parse(t).ds1 || []);
+  };
+  try {
+    const [credit, fund] = await Promise.all([call('STATSCU0100000070BO'), call('STATSCU0100000060BO')]);
+    return { // 값 단위: 백만원, 최신순
+      credit: credit.filter(r => r.TMPV2 != null).slice(0, days)
+        .map(r => ({ date: String(r.TMPV1), total: num(r.TMPV2), kospi: num(r.TMPV3), kosdaq: num(r.TMPV4) })),
+      fund: fund.filter(r => r.TMPV2 != null).slice(0, days)
+        .map(r => ({ date: String(r.TMPV1), deposit: num(r.TMPV2), misu: num(r.TMPV5), bandae: num(r.TMPV6), bandaeRatio: num(r.TMPV7) })),
+    };
+  } catch (e) { console.log('      FreeSIS 실패: ' + e.message + ' → 네이버 폴백'); return null; }
+}
+
+// ---------- 3) 예탁금·신용잔고 (90영업일) — 네이버 (KOFIA 실패 시 폴백용) ----------
 async function fetchDepositCredit(days = 90) {
   // 행 구조: <td class="date">26.07.10</td> 뒤로 rate_up/rate_down 클래스 td 10개
   //          [예탁금, 예탁금증감, 신용잔고, 신용증감, 주식형, 증감, 혼합형, 증감, 채권형, 증감] (단위 억원)
@@ -445,6 +478,30 @@ function svgRatioChart(asc) {
   </svg>`;
 }
 
+// 다중 라인차트 (신용잔고 유가/코스닥 분리 등) — seriesList: [{name, color, rows:[{date,v}] 과거→최신}]
+function svgLines(seriesList, { width = 560, height = 190, unitDiv = 10000, unitLabel = '조원' } = {}) {
+  const pad = { l: 46, r: 14, t: 16, b: 24 };
+  const IW = width - pad.l - pad.r, IH = height - pad.t - pad.b;
+  const all = seriesList.flatMap(s => s.rows.map(r => r.v / unitDiv));
+  const mn = Math.min(...all), mx = Math.max(...all), rng = (mx - mn) || 1;
+  const y = (v) => pad.t + IH - (v / unitDiv - mn) / rng * IH;
+  const lines = seriesList.map(s => {
+    const n = s.rows.length;
+    const x = (i) => pad.l + i / (n - 1) * IW;
+    return `<polyline points="${s.rows.map((r, i) => x(i).toFixed(1) + ',' + y(r.v).toFixed(1)).join(' ')}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
+  }).join('');
+  const base = seriesList[0].rows;
+  const xi = [0, Math.floor(base.length / 2), base.length - 1];
+  const x0 = (i) => pad.l + i / (base.length - 1) * IW;
+  const yls = [mn, (mn + mx) / 2, mx].map(v => `<line x1="${pad.l}" y1="${(pad.t + IH - (v - mn) / rng * IH).toFixed(1)}" x2="${pad.l + IW}" y2="${(pad.t + IH - (v - mn) / rng * IH).toFixed(1)}" class="grid"/><text x="${pad.l - 6}" y="${(pad.t + IH - (v - mn) / rng * IH + 3.5).toFixed(1)}" class="axl" text-anchor="end">${fmt(v, 1)}</text>`).join('');
+  const legend = seriesList.map((s, i) => `<text x="${pad.l + 4 + i * 120}" y="${pad.t - 4}" class="axl" fill="${s.color}">— ${s.name}</text>`).join('');
+  return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+    ${yls}${lines}${legend}
+    ${xi.map(i => `<text x="${x0(i).toFixed(1)}" y="${height - 6}" class="axl" text-anchor="${i === 0 ? 'start' : i === base.length - 1 ? 'end' : 'middle'}">${base[i].date}</text>`).join('')}
+    <text x="${pad.l}" y="${height - 6}" class="axl" opacity="0"> </text>
+  </svg>`;
+}
+
 // Fear&Greed 반원 게이지 SVG (0=극단공포 좌측, 100=극단탐욕 우측)
 function svgGauge(score, label) {
   const W = 260, H = 150, cx = 130, cy = 130, R = 100, r = 74;
@@ -520,7 +577,7 @@ function renderOverheat(oh) {
 }
 
 function render(data) {
-  const { rt, krx, dep, invK, invQ, ranks, trdvalMap, cache, fg, oh, now } = data;
+  const { rt, krx, dep, kofia, invK, invQ, ranks, trdvalMap, cache, fg, oh, now } = data;
   const kospi = rt.KOSPI, kosdaq = rt.KOSDAQ;
   const stateTxt = kospi.state === 'OPEN' ? '장중' : '장마감';
   const invKr = invK[0], invQr = invQ[0];
@@ -661,7 +718,7 @@ function render(data) {
     <div class="ttl">신용거래융자 잔고 <span class="tag">${d0 ? d0.date : '-'}</span></div>
     <div class="big">${d0 ? fmt(d0.credit / 10000, 1) : '-'}<span style="font-size:15px"> 조원</span></div>
     <div class="sub ${d0 ? signCls(d0.creditChg) : 'fl'}">${d0 ? signTxt(d0.creditChg / 10000, 2) + ' 조원 (전일비)' : ''}</div>
-    <div class="mini">90영업일 최고 ${fmt(Math.max(...dep.map(r => r.credit)) / 10000, 1)}조 · 최저 ${fmt(Math.min(...dep.map(r => r.credit)) / 10000, 1)}조</div>
+    <div class="mini">${kofia && kofia.credit.length ? `유가 ${fmt(kofia.credit[0].kospi / 1000000, 1)}조 · 코스닥 ${fmt(kofia.credit[0].kosdaq / 1000000, 1)}조 · ` : ''}90영업일 최고 ${fmt(Math.max(...dep.map(r => r.credit)) / 10000, 1)}조 · 최저 ${fmt(Math.min(...dep.map(r => r.credit)) / 10000, 1)}조</div>
   </div>
 </div>
 
@@ -773,14 +830,27 @@ ${(() => {
     ${depChart}
   </div>
   <div class="card">
-    <div class="ttl">신용거래융자 잔고 추이</div>
-    <div class="chstat"><b>${d0 ? fmt(d0.credit / 10000, 1) : '-'}조원</b> (${d0 ? signTxt(d0.creditChg, 0) : '-'}억)</div>
-    ${crdChart}
+    <div class="ttl">신용거래융자 잔고 추이${kofia && kofia.credit.length ? ' — 유가/코스닥 분리 (금투협 공식)' : ''}</div>
+    <div class="chstat"><b>${d0 ? fmt(d0.credit / 10000, 1) : '-'}조원</b> (${d0 ? signTxt(d0.creditChg, 0) : '-'}억)${kofia && kofia.credit.length ? ` · 코스닥 <b>${fmt(kofia.credit[0].kosdaq / 1000000, 2)}조</b>` : ''}</div>
+    ${kofia && kofia.credit.length >= 10 ? svgLines([
+      { name: '합계', color: '#e2a03f', rows: kofia.credit.slice().reverse().map(r => ({ date: r.date.slice(4, 6) + '/' + r.date.slice(6, 8), v: r.total / 100 })) },
+      { name: '유가증권', color: '#4f8ef7', rows: kofia.credit.slice().reverse().map(r => ({ date: r.date.slice(4, 6) + '/' + r.date.slice(6, 8), v: r.kospi / 100 })) },
+      { name: '코스닥', color: '#43b58e', rows: kofia.credit.slice().reverse().map(r => ({ date: r.date.slice(4, 6) + '/' + r.date.slice(6, 8), v: r.kosdaq / 100 })) },
+    ]) : crdChart}
   </div>
-  ${lockedCard('전일 반대매매 / 예탁금 대비 비율', `
-    금융투자협회(FreeSIS) 반대매매 통계는 사이트 리뉴얼로 무인증 API가 차단되어 현재 자동 수집이 불가합니다.<br>
-    · 수동 확인: <a href="https://freesis.kofia.or.kr/stat/FreeSIS.do?parentDivId=MSIS10000000000000&serviceId=STATSCU0100000060" style="color:#7fa8ef">FreeSIS &gt; 주식 &gt; 증시자금추이</a><br>
-    · 연동 재개 조건: FreeSIS 신규 API 경로 확보 시 이 카드에 자동 표시되도록 코드가 준비되어 있습니다.`)}
+  ${(() => {
+    if (!kofia || !kofia.fund.length) return lockedCard('전일 반대매매 / 예탁금 대비 비율', 'FreeSIS 수집 실패 — 다음 갱신 때 재시도합니다.');
+    const f0 = kofia.fund[0];
+    const depRatio = f0.deposit > 0 ? f0.bandae / f0.deposit * 100 : null;
+    const bandaeAsc = kofia.fund.slice().reverse().map(r => ({ date: r.date.slice(4, 6) + '/' + r.date.slice(6, 8), v: r.bandae / 100 }));
+    return `<div class="card">
+      <div class="ttl">반대매매 (위탁매매 미수금 기준) <span class="tag">${f0.date.slice(4, 6)}/${f0.date.slice(6, 8)}</span></div>
+      <div class="big">${fmt(f0.bandae / 100)}<span style="font-size:15px"> 억원</span></div>
+      <div class="sub fl">미수금 대비 <b>${fmt(f0.bandaeRatio, 1)}%</b> · 예탁금 대비 <b>${depRatio != null ? fmt(depRatio, 3) : '-'}%</b></div>
+      <div class="mini" style="margin-bottom:8px">위탁매매 미수금 ${fmt(f0.misu / 100)}억 · 90영업일 반대매매 최고 ${fmt(Math.max(...kofia.fund.map(r => r.bandae)) / 100)}억</div>
+      ${svgChart(bandaeAsc, { color: '#e2506c', height: 130, unitDiv: 1, unitLabel: '억원' })}
+    </div>`;
+  })()}
 </div>
 
 <div class="sec">주체별 순매매 상위 top5 — 기준일 ${rankDate} (코스피+코스닥 통합, 금액 기준)</div>
@@ -832,9 +902,23 @@ function showTab(id) {
   const t0 = Date.now();
   console.log('[1/8] 지수(실시간/확정) 수집...');
   const [rt, krx] = await Promise.all([fetchRealtimeIndex(), fetchKrxOfficialIndex()]);
-  console.log('[2/8] 예탁금/신용잔고 90영업일 수집...');
-  const dep = await fetchDepositCredit(90);
-  console.log(`      ${dep.length}일 (${dep[dep.length - 1]?.date} ~ ${dep[0]?.date})`);
+  console.log('[2/8] 예탁금/신용잔고/반대매매 90영업일 수집 (금투협 FreeSIS 공식)...');
+  const kofia = await fetchKofia(90);
+  let dep;
+  if (kofia && kofia.fund.length >= 30) {
+    // KOFIA 공식치 → 기존 dep 형태(억원, '26.MM.DD')로 변환. 신용은 같은 날짜 융자합 매칭
+    const cMap = Object.fromEntries(kofia.credit.map(r => [r.date, r]));
+    dep = kofia.fund.map(r => ({
+      date: r.date.slice(2, 4) + '.' + r.date.slice(4, 6) + '.' + r.date.slice(6, 8),
+      deposit: r.deposit / 100, credit: cMap[r.date] ? cMap[r.date].total / 100 : null, // 백만→억
+      depositChg: null, creditChg: null,
+    })).filter(r => r.credit != null);
+    for (let i = 0; i < dep.length - 1; i++) { dep[i].depositChg = dep[i].deposit - dep[i + 1].deposit; dep[i].creditChg = dep[i].credit - dep[i + 1].credit; }
+    console.log(`      KOFIA ${dep.length}일 (${dep[dep.length - 1]?.date} ~ ${dep[0]?.date}), 반대매매 최신 ${kofia.fund[0].date} ${fmt(kofia.fund[0].bandae / 100)}억`);
+  } else {
+    dep = await fetchDepositCredit(90);
+    console.log(`      네이버 폴백 ${dep.length}일 (${dep[dep.length - 1]?.date} ~ ${dep[0]?.date})`);
+  }
   console.log('[3/8] 투자자별 순매수 수집 (90영업일)...');
   const [invK, invQ] = await Promise.all([fetchInvestorTrend('01', 90), fetchInvestorTrend('02', 90)]);
   console.log(`      코스피 ${invK.length}일 · 코스닥 ${invQ.length}일`);
@@ -868,7 +952,7 @@ function showTab(id) {
   console.log(`      ${oh ? oh.rows.length + '일, 최신 ' + oh.rows[0].date + ' ' + oh.rows[0].ratio.toFixed(2) + 'x (' + oh.rows[0].verdict + (oh.rows[0].prov ? ', 잠정' : '') + ')' : '조립 실패'}`);
   console.log('[8/8] HTML 생성...');
   const now = new Date(Date.now() + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 16) + ' KST';
-  const html = render({ rt, krx, dep, invK, invQ, ranks: { f01b, f01s, f02b, f02s, i01b, i01s, i02b, i02s }, trdvalMap, cache, fg, oh, now });
+  const html = render({ rt, krx, dep, kofia, invK, invQ, ranks: { f01b, f01s, f02b, f02s, i01b, i01s, i02b, i02s }, trdvalMap, cache, fg, oh, now });
   let out;
   if (OUTFILE) { // 클라우드(GitHub Actions) 모드: 단일 파일만 출력
     out = OUTFILE;
