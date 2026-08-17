@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>수급 대시보드 2026-08-17</title>
+<title>수급 대시보드 2026-08-18</title>
 <style>
   :root { --bg:#0f1420; --card:#171e2e; --line:#232c42; --tx:#dbe4f5; --dim:#8492ad;
           --up:#f4516c; --dn:#3d8bfd; --fl:#8492ad; --acc:#4f8ef7; }
@@ -49,7 +49,7 @@
   .prov td { border-top:1px solid #4f8ef7; border-bottom:1px solid #4f8ef7; }
 </style></head><body>
 <h1>국내 증시 수급 대시보드</h1>
-<div class="meta">갱신: 2026-08-17 22:35 KST · 지수 장마감 기준 · 투자자별 순매수 기준일 26.08.14 · 예탁금/신용 최신일 26.08.13</div>
+<div class="meta">갱신: 2026-08-18 08:12 KST · 지수 장마감 기준 · 투자자별 순매수 기준일 26.08.14 · 예탁금/신용 최신일 26.08.13</div>
 <div class="tabbar">
   <button class="tabbtn active" id="btn-main" onclick="showTab('main')">수급 현황</button>
   <button class="tabbtn" id="btn-overheat" onclick="showTab('overheat')">과열지표</button>
@@ -60,18 +60,18 @@
   
     <div class="card idx">
       <div class="ttl">코스피 <span class="tag">장마감</span></div>
-      <div class="big up">6,977.94</div>
-      <div class="sub up">+164.60 (+2.42%)</div>
-      <div class="mini">고가 7,010.86 · 저가 6,848.43 · 거래대금 27.2조원</div>
-      
+      <div class="big fl">6,977.94</div>
+      <div class="sub fl">0.00 (0.00%)</div>
+      <div class="mini">고가 0.00 · 저가 0.00 · 거래대금 0.0조원</div>
+      <div class="mini dim">전영업일 확정(KRX 20260814): 6,977.94 (+2.42%)</div>
     </div>
   
     <div class="card idx">
       <div class="ttl">코스닥 <span class="tag">장마감</span></div>
-      <div class="big up">864.65</div>
-      <div class="sub up">+3.28 (+0.38%)</div>
-      <div class="mini">고가 879.29 · 저가 845.41 · 거래대금 7.6조원</div>
-      
+      <div class="big fl">864.65</div>
+      <div class="sub fl">0.00 (0.00%)</div>
+      <div class="mini">고가 0.00 · 저가 0.00 · 거래대금 0.0조원</div>
+      <div class="mini dim">전영업일 확정(KRX 20260814): 864.65 (+0.38%)</div>
     </div>
   <div class="card">
     <div class="ttl">투자자예탁금 <span class="tag">26.08.13</span></div>
@@ -284,15 +284,15 @@
     </div>
 </div>
 
-<div class="sec">수급 강도 top5 — 기준일 26.08.14 (외국인+기관 순매수금액 ÷ 해당일 거래대금, 거래대금은 종가×거래량 근사(네이버))</div>
+<div class="sec">수급 강도 top5 — 기준일 26.08.14 (외국인+기관 순매수금액 ÷ 해당일 거래대금, KRX 확정치)</div>
 <div class="grid g2">
   <div class="card"><div class="ttl">매수 강도 상위 <span class="tag">그날 거래대금의 몇 %를 순매수했나</span></div><table class="rank">
     <tr><th>종목</th><th>거래대금 대비</th><th>금액(억원)</th></tr>
-    <tr><td>코스메카코리아</td><td class="up">+45.8%</td><td>143</td></tr><tr><td>농심</td><td class="up">+39.9%</td><td>269</td></tr><tr><td>현대해상</td><td class="up">+39.5%</td><td>201</td></tr><tr><td>HD현대중공업</td><td class="up">+35.9%</td><td>398</td></tr><tr><td>GS</td><td class="up">+34.4%</td><td>324</td></tr>
+    <tr><td>코스메카코리아</td><td class="up">+45.3%</td><td>143</td></tr><tr><td>농심</td><td class="up">+40.8%</td><td>269</td></tr><tr><td>현대해상</td><td class="up">+39.8%</td><td>201</td></tr><tr><td>HD현대중공업</td><td class="up">+35.9%</td><td>398</td></tr><tr><td>GS</td><td class="up">+34.8%</td><td>324</td></tr>
   </table></div>
   <div class="card"><div class="ttl">매도 강도 상위</div><table class="rank">
     <tr><th>종목</th><th>거래대금 대비</th><th>금액(억원)</th></tr>
-    <tr><td>GS</td><td class="dn">-46.8%</td><td>441</td></tr><tr><td>클래시스</td><td class="dn">-40.8%</td><td>78</td></tr><tr><td>한국전력</td><td class="dn">-40.4%</td><td>222</td></tr><tr><td>포스코인터내셔널</td><td class="dn">-39.7%</td><td>144</td></tr><tr><td>에이비엘바이오</td><td class="dn">-36.1%</td><td>88</td></tr>
+    <tr><td>GS</td><td class="dn">-47.4%</td><td>441</td></tr><tr><td>한국전력</td><td class="dn">-40.6%</td><td>222</td></tr><tr><td>클래시스</td><td class="dn">-40.2%</td><td>78</td></tr><tr><td>포스코인터내셔널</td><td class="dn">-39.7%</td><td>144</td></tr><tr><td>에이비엘바이오</td><td class="dn">-35.9%</td><td>88</td></tr>
   </table></div>
 </div>
 <div class="mini" style="margin-top:-6px">※ 요청하신 외국인·사모·연기금 3주체 기준 수급강도는 사모/연기금 상위종목 데이터가 잠금 상태라, 현재는 외국인+기관 합산으로 산출합니다. KRX 로그인 또는 키움 단말기 해제 시 3주체 기준으로 전환됩니다.</div>
